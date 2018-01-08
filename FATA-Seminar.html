@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Title</title>
+    <meta charset="utf-8">
+    <style>
+      @import url(lift.css);
+      @import url(glasgow.css);
+    </style>
+  </head>
+  <body>
+    <textarea id="source">
+
+name: title
+background-image: url(images/Title16x9.jpg)
+class: title-slide
+count: false
+
+# The .lift[Lift] Project
+## Performance Portable Code Generation via Rewrite Rules
+
+### Michel Steuwer .smaller[| [http://michel.steuwer.info](http://michel.steuwer.info/) | [michel.steuwer@glasgow.ac.uk](mailto:michel.steuwer@glasgow.ac.uk)]
+
+---
+class: split-50
+
+# What are the problems .lift[Lift] tries to tackle?
+
+.left-column[
+- Parallel processors everywhere
+
+- Many different types: CPUs, GPUs, ...
+
+- Parallel programming is hard
+
+- Optimising is even harder
+
+- **Problem**: No portability of performance!
+]
+
+.right-column[
+IMAGEs
+]
+
+
+---
+# Case Study: Parallel Reduction in OpenCL
+
+- Summing up all values of an array
+
+- Comparison of 7 implementations by Nvidia
+
+- Investigating complexity and efficiency of optimisations
+
+---
+# 1. Version: .smaller[Unoptimised Reduction Implementation]
+
+.box-70[
+```
+kernel void reduce(global float* g_idata, global float* g_odata,
+                   unsigned int n, local float* l_data) {
+  unsigned int tid = get_local_id(0);
+  unsigned int i   = get_global_id(0);
+  l_data[tid] = (i < n) ? g_idata[i] : 0;
+  barrier(CLK_LOCAL_MEM_FENCE);
+
+  for (unsigned int s=1; s < get_local_size(0); s *= 2) {
+      if ((tid % (2*s)) == 0) {
+          l_data[tid] += l_data[tid + s];
+      }
+      barrier(CLK_LOCAL_MEM_FENCE);
+  }
+
+  if (tid == 0) g_odata[get_group_id(0)] = l_data[0];
+}
+```
+]
+
+---
+# 2. Version: .smaller[Avoid Divergent Branching]
+
+.box-70[
+```
+kernel void reduce(global float* g_idata, global float* g_odata,
+                   unsigned int n, local float* l_data) {
+  unsigned int tid = get_local_id(0);
+  unsigned int i   = get_global_id(0);
+  l_data[tid] = (i < n) ? g_idata[i] : 0;
+  barrier(CLK_LOCAL_MEM_FENCE);
+
+  for (unsigned int s=1; s < get_local_size(0); s *= 2) {
+      `int index = 2 * s * tid;`
+      if (`index < get_local_size(0)`) {
+          l_data[`index`] += l_data[`index` + s];
+      }
+      barrier(CLK_LOCAL_MEM_FENCE);
+  }
+
+  if (tid == 0) g_odata[get_group_id(0)] = l_data[0];
+}
+```
+]
+
+---
+# 3. Version: .smaller[Avoid Interleaved Addressing]
+
+.box-70[
+```
+kernel void reduce(global float* g_idata, global float* g_odata,
+                   unsigned int n, local float* l_data) {
+  unsigned int tid = get_local_id(0);
+  unsigned int i   = get_global_id(0);
+  l_data[tid] = (i < n) ? g_idata[i] : 0;
+  barrier(CLK_LOCAL_MEM_FENCE);
+
+  for (`unsigned int s=get_local_size(0)/2; s > 0; s >>= 1`) {
+      if (`tid < s`) {
+          l_data[`tid`] += l_data[`tid`+ s];
+      }
+      barrier(CLK_LOCAL_MEM_FENCE);
+  }
+
+  if (tid == 0) g_odata[get_group_id(0)] = l_data[0];
+}
+```
+]
+
+---
+# 4. Version: .smaller[Increase Comp. Intensity per Work-Item]
+
+.box-70[
+```
+kernel void reduce(global float* g_idata, global float* g_odata,
+                   unsigned int n, local float* l_data) {
+  unsigned int tid = get_local_id(0);
+  `unsigned int i   = get_group_id(0) * (get_local_size(0)*2)`
+                                     `+ get_local_id(0);`
+  l_data[tid] = (i < n) ? g_idata[i] : 0;
+  // perform first addition during loading
+  `if (i + get_local_size(0) < n)`
+    `l_data[tid] += g_idata[i + get_local_size(0)];`
+  barrier(CLK_LOCAL_MEM_FENCE);
+
+  for (unsigned int s=get_local_size(0)/2; s > 0; s >>= 1) {
+      if (tid < s) {
+          l_data[tid] += l_data[tid+ s];
+      }
+      barrier(CLK_LOCAL_MEM_FENCE);
+  }
+
+  if (tid == 0) g_odata[get_group_id(0)] = l_data[0];
+}
+```
+]
+
+---
+# 5. Version: .smaller[Avoid Synchronisation inside a Warp]
+
+.box-70[
+```
+kernel void reduce(global float* g_idata, global float* g_odata,
+                   unsigned int n, local `volatile` float* l_data){
+  unsigned int tid = get_local_id(0);
+  unsigned int i   = get_group_id(0) * (get_local_size(0)*2)
+                                     + get_local_id(0);
+  l_data[tid] = (i < n) ? g_idata[i] : 0;
+  if (i + get_local_size(0) < n)
+    l_data[tid] += g_idata[i + get_local_size(0)];
+  barrier(CLK_LOCAL_MEM_FENCE);
+  `#pragma unroll 1`
+  for (unsigned int s=get_local_size(0)/2; s > `32`; s >>= 1) {
+      if (tid < s) { l_data[tid] += l_data[tid+ s]; }
+      barrier(CLK_LOCAL_MEM_FENCE); }
+  // this is not portable OpenCL code!
+  `if (tid < 32) {`
+  `  if (WG_SIZE >= 64) { l_data[tid] += l_data[tid+32]; }`
+  `  if (WG_SIZE >= 32) { l_data[tid] += l_data[tid+16]; }`
+  `  if (WG_SIZE >= 16) { l_data[tid] += l_data[tid+ 8]; }`
+  `  if (WG_SIZE >=  8) { l_data[tid] += l_data[tid+ 4]; }`
+  `  if (WG_SIZE >=  4) { l_data[tid] += l_data[tid+ 2]; }`
+  `  if (WG_SIZE >=  2) { l_data[tid] += l_data[tid+ 1]; } }`
+  if (tid == 0) g_odata[get_group_id(0)] = l_data[0];
+}
+```
+]
+
+---
+# 6. Version: .smaller[Complete Loop Unrolling]
+
+.box-70[
+```
+kernel void reduce(global float* g_idata, global float* g_odata,
+                   unsigned int n, local volatile float* l_data){
+  unsigned int tid = get_local_id(0);
+  unsigned int i   = get_group_id(0) * (get_local_size(0)*2)
+                                     + get_local_id(0);
+  l_data[tid] = (i < n) ? g_idata[i] : 0;
+  if (i + get_local_size(0) < n)
+    l_data[tid] += g_idata[i + get_local_size(0)];
+  barrier(CLK_LOCAL_MEM_FENCE);
+  `if (WG_SIZE >= 256) {`
+  `    if (tid < 128) { l_data[tid] += l_data[tid+128]; }`
+  `    barrier(CLK_LOCAL_MEM_FENCE); }`
+  `if (WG_SIZE >= 128) {`
+  `    if (tid < 64) { l_data[tid] += l_data[tid+ 64]; }`
+  `    barrier(CLK_LOCAL_MEM_FENCE); }`
+  if (tid < 32) {
+    if (WG_SIZE >= 64) { l_data[tid] += l_data[tid+32]; }
+    if (WG_SIZE >= 32) { l_data[tid] += l_data[tid+16]; }
+    if (WG_SIZE >= 16) { l_data[tid] += l_data[tid+ 8]; }
+    if (WG_SIZE >=  8) { l_data[tid] += l_data[tid+ 4]; }
+    if (WG_SIZE >=  4) { l_data[tid] += l_data[tid+ 2]; }
+    if (WG_SIZE >=  2) { l_data[tid] += l_data[tid+ 1]; } }
+  if (tid == 0) g_odata[get_group_id(0)] = l_data[0]; }
+```
+]
+
+---
+# 7. Version: .smaller[Fully Optimised Implementation]
+
+.box-70[
+```
+kernel void reduce(global float* g_idata, global float* g_odata,
+                   unsigned int n, local volatile float* l_data){
+  unsigned int tid = get_local_id(0);
+  unsigned int i   = get_group_id(0) * (get_local_size(0)*2)
+                                     + get_local_id(0);
+  `unsigned int gridSize = WG_SIZE * get_num_groups(0);`
+  `l_data[tid] = 0;`
+  `while (i < n) { l_data[tid] += g_idata[i];`
+  `                if (i + WG_SIZE < n)`
+  `                  l_data[tid] += g_idata[i+WG_SIZE];`
+  `                i += gridSize; }`
+  barrier(CLK_LOCAL_MEM_FENCE);
+  if (WG_SIZE >= 256) {
+      if (tid < 128) { l_data[tid] += l_data[tid+128]; }
+      barrier(CLK_LOCAL_MEM_FENCE); }
+  if (WG_SIZE >= 128) {
+      if (tid < 64) { l_data[tid] += l_data[tid+ 64]; }
+      barrier(CLK_LOCAL_MEM_FENCE); }
+  if (tid < 32) {
+    if (WG_SIZE >= 64) { l_data[tid] += l_data[tid+32]; }
+    if (WG_SIZE >= 32) { l_data[tid] += l_data[tid+16]; }
+    if (WG_SIZE >= 16) { l_data[tid] += l_data[tid+ 8]; }
+    if (WG_SIZE >=  8) { l_data[tid] += l_data[tid+ 4]; }
+    if (WG_SIZE >=  4) { l_data[tid] += l_data[tid+ 2]; }
+    if (WG_SIZE >=  2) { l_data[tid] += l_data[tid+ 1]; } }
+  if (tid == 0) g_odata[get_group_id(0)] = l_data[0]; }
+```
+]
+
+---
+class: split-50
+
+# Reduction Case Study Conclusions
+
+.left-column[
+- Programming and optimising OpenCL is complex
+    - Understanding of target hardware required
+
+- Program changes are not obvious
+
+- Why are we doing this? Is it woth it? ...
+]
+
+
+.right-column[
+.box-90[.small[
+```
+kernel void reduce(global float* g_idata, global float* g_odata,
+                   unsigned int n, local float* l_data) {
+  unsigned int tid = get_local_id(0);
+  unsigned int i   = get_global_id(0);
+  l_data[tid] = (i < n) ? g_idata[i] : 0;
+  barrier(CLK_LOCAL_MEM_FENCE);
+  for (unsigned int s=1; s < get_local_size(0); s *= 2) {
+      if ((tid % (2*s)) == 0)
+          l_data[tid] += l_data[tid + s];
+      barrier(CLK_LOCAL_MEM_FENCE); }
+  if (tid == 0) g_odata[get_group_id(0)] = l_data[0]; }
+```
+]]
+.smaller[.center[Unoptimised vs. Fully Optimised]]
+.box-90[.small[
+```
+kernel void reduce(global float* g_idata, global float* g_odata,
+                   unsigned int n, local volatile float* l_data) {
+  unsigned int tid = get_local_id(0);
+  unsigned int i = get_group_id(0) * (get_local_size(0)*2) + get_local_id(0);
+  unsigned int gridSize = WG_SIZE * get_num_groups(0);
+  l_data[tid] = 0;
+  while (i < n) { l_data[tid] += g_idata[i];
+                  if (i + WG_SIZE < n) l_data[tid] += g_idata[i+WG_SIZE];
+                  i += gridSize; }
+  barrier(CLK_LOCAL_MEM_FENCE);
+  if (WG_SIZE >= 256) {
+      if (tid < 128) { l_data[tid] += l_data[tid+128]; }
+      barrier(CLK_LOCAL_MEM_FENCE); }
+  if (WG_SIZE >= 128) {
+      if (tid < 64) { l_data[tid] += l_data[tid+ 64]; }
+      barrier(CLK_LOCAL_MEM_FENCE); }
+  if (tid < 32) {
+    if (WG_SIZE >= 64) { l_data[tid] += l_data[tid+32]; }
+    if (WG_SIZE >= 32) { l_data[tid] += l_data[tid+16]; }
+    if (WG_SIZE >= 16) { l_data[tid] += l_data[tid+ 8]; }
+    if (WG_SIZE >=  8) { l_data[tid] += l_data[tid+ 4]; }
+    if (WG_SIZE >=  4) { l_data[tid] += l_data[tid+ 2]; }
+    if (WG_SIZE >=  2) { l_data[tid] += l_data[tid+ 1]; } }
+  if (tid == 0) g_odata[get_group_id(0)] = l_data[0]; }
+```
+]]
+]
+
+---
+# Performance Results Nvidia
+
+---
+
+name: closing
+background-image: url(images/Closing16x9.jpg)
+class: title-slide, text-white
+count: false
+
+# The .lift[Lift] Project
+## Performance Portable Code Generation via Rewrite Rules
+
+### Michel Steuwer .smaller[| [http://michel.steuwer.info](http://michel.steuwer.info/) | [michel.steuwer@glasgow.ac.uk](mailto:michel.steuwer@glasgow.ac.uk)]
+
+.center-bottom[.big[[http://www.lift-project.org/](http://www.lift-project.org/)]]
+
+    </textarea>
+    <script src="https://remarkjs.com/downloads/remark-latest.min.js">
+    </script>
+    <script>
+      var slideshow = remark.create({
+          ratio: '16:9',
+          highlightLanguage: 'c',
+        //   highlightStyle: 'idea',
+          highlightStyle: 'monokai',
+          highlightLines: true,
+          highlightSpans: true
+          });
+    </script>
+  </body>
+</html>
