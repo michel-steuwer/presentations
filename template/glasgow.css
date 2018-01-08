@@ -115,6 +115,8 @@ a {
 .left-column {float:left}
 .right-column {float:right}
 
+.clear-columns { display: block; clear: both; }
+
 .split-30 .left-column {width: 30%}
 .split-30 .right-column {width: 70%}
 .split-40 .left-column {width: 40%}
@@ -126,11 +128,11 @@ a {
 .split-70 .left-column {width: 70%}
 .split-70 .right-column {width: 30%}
 
-.box-20 { width: 20%; margin: 0 auto; }
-.box-30 { width: 30%; margin: 0 auto; }
-.box-40 { width: 40%; margin: 0 auto; }
-.box-50 { width: 50%; margin: 0 auto; }
-.box-60 { width: 60%; margin: 0 auto; }
-.box-70 { width: 70%; margin: 0 auto; }
-.box-80 { width: 80%; margin: 0 auto; }
-.box-90 { width: 90%; margin: 0 auto; }
+.box-20 { width: 20%; margin: 0 auto; display: block; }
+.box-30 { width: 30%; margin: 0 auto; display: block; }
+.box-40 { width: 40%; margin: 0 auto; display: block; }
+.box-50 { width: 50%; margin: 0 auto; display: block; }
+.box-60 { width: 60%; margin: 0 auto; display: block; }
+.box-70 { width: 70%; margin: 0 auto; display: block; }
+.box-80 { width: 80%; margin: 0 auto; display: block; }
+.box-90 { width: 90%; margin: 0 auto; display: block; }

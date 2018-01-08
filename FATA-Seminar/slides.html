@@ -1,18 +1,19 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Title</title>
+    <title>The Lift Project - Performance Portable Code Generation via Rewrite Rules</title>
     <meta charset="utf-8">
     <style>
-      @import url(lift.css);
-      @import url(glasgow.css);
+      @import url(../template/lift.css);
+      @import url(../template/glasgow.css);
+      @import url(../template/print.css);
     </style>
   </head>
   <body>
     <textarea id="source">
 
 name: title
-background-image: url(images/Title16x9.jpg)
+background-image: url(../template/images/Title16x9.jpg)
 class: title-slide
 count: false
 
@@ -22,25 +23,62 @@ count: false
 ### Michel Steuwer .smaller[| [http://michel.steuwer.info](http://michel.steuwer.info/) | [michel.steuwer@glasgow.ac.uk](mailto:michel.steuwer@glasgow.ac.uk)]
 
 ---
-class: split-50
+class: split-40
 
-# What are the problems .lift[Lift] tries to tackle?
+# What is the problem .lift[Lift] tries to tackle?
 
 .left-column[
 - Parallel processors everywhere
 
-- Many different types: CPUs, GPUs, ...
+- Many different types:<br/>
+    CPUs, GPUs, FPGAs, ...
 
 - Parallel programming is hard
 
 - Optimising is even harder
 
-- **Problem**: No portability of performance!
+- **How do we write efficient software for all these devices?**
 ]
 
-.right-column[
-IMAGEs
-]
+<div style="width: 400px; position: absolute; top: 150px; left: 560px">
+    <img style="vertical-align:middle" src="images/cpu.png" width="80%"/>
+    <strong>CPUs</strong>
+</div>
+
+<div style="width: 500px; position: absolute; top: 220px; left: 640px;">
+    <img style="vertical-align:middle" src="images/gpu.png" width="80%"/>
+    <strong style="margin-left: -30px;">GPUs</strong>
+</div>
+
+<div style="width: 200px; position: absolute; top: 375px; left: 500px;">
+    <img style="vertical-align:middle" src="images/phi.png" width="100%"/>
+    <center><strong>Accelerator</strong></center>
+</div>
+
+<div style="width: 150px; position: absolute; top: 395px; left: 740px;">
+    <img style="vertical-align:middle" src="images/fpga.png" width="100%"/>
+    <center><strong>FPGA</strong></center>
+</div>
+
+<div style="width: 150px; position: absolute; top: 375px; left: 960px;">
+    <img style="vertical-align:middle" src="images/tpu.png" width="100%"/>
+    <center><strong>TPU</strong></center>
+</div>
+
+<div style="width: 200px; position: absolute; top: 550px; left: 360px;">
+    <img style="vertical-align:middle" src="images/hpu.png" width="100%"/>
+    <center><strong>HPU</strong></center>
+</div>
+
+<div style="width: 200px; position: absolute; top: 560px; left: 600px;">
+    <img style="vertical-align:middle" src="images/brainwave.png" width="100%"/>
+    <center><strong>Brainwave</strong></center>
+</div>
+
+<div style="width: 150px; position: absolute; top: 540px; left: 850px;">
+    <center><img style="vertical-align:middle" src="images/neuralEngine.png" width="75%"/></center>
+    <center><strong>Neural Engine</strong></center>
+</div>
 
 
 ---
@@ -51,6 +89,10 @@ IMAGEs
 - Comparison of 7 implementations by Nvidia
 
 - Investigating complexity and efficiency of optimisations
+
+.box-70[
+<img src="images/reduction.pdf" width="100%" />
+]
 
 ---
 # 1. Version: .smaller[Unoptimised Reduction Implementation]
@@ -280,7 +322,7 @@ kernel void reduce(global float* g_idata, global float* g_odata,
   if (tid == 0) g_odata[get_group_id(0)] = l_data[0]; }
 ```
 ]]
-.smaller[.center[Unoptimised vs. Fully Optimised]]
+.smaller[.center[↑ Unoptimised ↑ &emsp; vs. &emsp; ↓ Fully Optimised ↓]]
 .box-90[.small[
 ```
 kernel void reduce(global float* g_idata, global float* g_odata,
@@ -314,10 +356,43 @@ kernel void reduce(global float* g_idata, global float* g_odata,
 ---
 # Performance Results Nvidia
 
+.box-50[
+<img src="images/nvidiaReduction.pdf" width="100%" />
+]
+
+- ... Yes! Optimising improves performance by a factor of **10**!
+
+- Optimising is important, but ...
+
+---
+class: split-50
+
+# Performance Results AMD and Intel
+
+.left-column[
+.box-90[
+<img src="images/amdReduction.pdf" width="100%" />
+]
+]
+
+.right-column[
+.box-90[
+<img src="images/intelReduction.pdf" width="100%" />
+]
+]
+
+.clear-columns[]
+
+- ... unfortunatley, optimisations in OpenCL are not portable!
+
+- Costly optimisation process required for every new device.
+
+- **Challenge**: how to achieve *performance portability*?
+
 ---
 
 name: closing
-background-image: url(images/Closing16x9.jpg)
+background-image: url(../template/images/Closing16x9.jpg)
 class: title-slide, text-white
 count: false
 
@@ -335,8 +410,7 @@ count: false
       var slideshow = remark.create({
           ratio: '16:9',
           highlightLanguage: 'c',
-        //   highlightStyle: 'idea',
-          highlightStyle: 'monokai',
+          highlightStyle: 'monokai', // light: 'idea', dark: 'monokai'
           highlightLines: true,
           highlightSpans: true
           });
