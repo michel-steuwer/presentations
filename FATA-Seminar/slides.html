@@ -648,9 +648,9 @@ class: split-50
 
 - `\( reduce~(+)~0~[x_1, \ldots, x_n] = 0 + x_1 + \cdots + x_n \)`
 
-- `\( split~n~[x_1, \ldots, x_m] = [ [x_1, \ldots, x_n], \ldots, [x_{m-n}, \ldots, x_m]] \)`
+- `\( split~n~[x_1, \ldots, x_m] = \left[ [x_1, \ldots, x_n], \ldots, [x_{m-n}, \ldots, x_m] \right] \)`
 
-- `\( join~[ [x_1, \ldots, x_n], \ldots, [x_{m-n}, \ldots, x_m]] = [x_1, \ldots, x_m] \)`
+- `\( join~\left[ [x_1, \ldots, x_n], \ldots, [x_{m-n}, \ldots, x_m] \right] = [x_1, \ldots, x_m] \)`
 
 - `\( iterate~f~n~xs = iterate~f~(n-1)~(f~xs) \)` <br/>
   `\( iterate~f~0~xs = xs \)`
@@ -660,22 +660,170 @@ class: split-50
 ---
 # 1. High-Level Programs
 
-```lift
-def scal a xs = map (λ x . x * a) xs
+.box-70[
+```haskell
+       scal = λ a xs . map (λ x . x * a) xs
 
-def asum xs = reduce (+) 0 (map abs xs)
+       asum = λ xs . reduce (+) 0 (map abs xs)
 
-def dotProduct xs ys = reduce (+) 0 (map (*) (zip xs ys))
+ dotProduct = λ xs ys . reduce (+) 0 (map (*) (zip xs ys))
 
-def gemv mat xs ys α β = map (+) zip(
-        map (λ row . scal α (dotProduct row xs)) mat,
-        scal β ys
-    ) 
+       gemv = λ mat xs ys α β .
+             map (+) zip(
+               map (λ row . scal α (dotProduct row xs)) mat,
+               scal β ys) 
 
-def mm A B = map (λ rowA .
-       map (λ colB . dotProduct rowA colB ) B
-    ) A
+         mm = λ a b .
+             map (λ rowA .
+               map (λ colB . dotProduct rowA colB ) b ) a
 ```
+]
+
+<!-- .box-70[
+```haskell
+       scal = λ a xs . xs |> map (λ x . x * a)
+
+       asum = λ xs . xs |> map abs |> reduce (+) 0
+
+ dotProduct = λ xs ys . zip xs ys |> map (*) |> reduce (+) 0
+
+       gemv = λ mat xs ys α β .
+            zip( mat |> map (λ row . dotProduct row xs |> scal α),
+                 scal β ys ) |> map (+)
+
+        mm = λ a b .
+            a |> map (λ rowA .
+                b |> map (λ colB . dotProduct rowA colB ))
+```
+] -->
+
+---
+# 2. Algorithmic Rewrite Rules
+
+- **Provably correct** rewrite rules
+
+- Express algorithmic implementation choices
+
+.box-80[
+- Split-join rule:<br/>
+    `\( map~f \rightarrow join \circ map~(map~f) \circ split~n \)`
+
+- Map fusion rule:<br/>
+    `\( map~f \circ map~g \rightarrow map~(f \circ g) \)`
+
+- Reduce rules:<br/>
+    `\( reduce~f~z \rightarrow reduce~f~z \circ reducePart~f~z \)`<br/><br/>
+    `\( reducePart~f~z \rightarrow reducePart~f~z \circ reorder \)`
+    `\( reducePart~f~z \rightarrow join \circ map~(reducePart~f~z) \circ split~n \)`
+    `\( reducePart~f~z \rightarrow iterate~n~(reducePart~f~z) \)`
+]
+
+---
+# Proof of Correctness of Split-join Rule
+
+.box-70[
+`\( join~(map~(map~f)~(split~n~[x_1, \ldots, x_n])) \)`
+
+<span style="font-size: 0.5em; margin-left: 10px;">def. of `\( split \)`</span><br/>
+`\( \quad = join~(map~(map~f)~\left[ [x_1, \ldots, x_n], \ldots, [x_{m-n}, \ldots, x_m]\right]) \)`<br/>
+
+<span style="font-size: 0.5em; margin-left: 10px;">def. of `\( map \)`</span><br/>
+`\( \quad = join~\left[ (map~f)~[x_1, \ldots, x_n], \ldots, (map~f)~[x_{m-n}, \ldots, x_m]\right] \)`
+
+<span style="font-size: 0.5em; margin-left: 10px;">def. of `\( map \)`</span><br/>
+`\( \quad = join~\left[[f~x_1, \ldots, f~x_n], \ldots, [f~x_{m-n}, \ldots, f~x_m]\right] \)`
+
+<span style="font-size: 0.5em; margin-left: 10px;">def. of `\( join \)`</span><br/>
+`\( \quad = [f~x_1, \ldots, f~x_n] = map~f~[x_1, \ldots, x_n] \)`
+]
+
+- Simple equational reasoning
+
+- Reasoning similar to *The Algebra of Programming* by *Richard Bird and Oege De Moor*
+
+
+---
+class: split-70, opencl-table
+<style>
+    .opencl-table table { width: 100%; }
+    .opencl-table tr > td { padding-top: 20px; }
+</style>
+
+# 2. OpenCL Primitives
+
+.left-column[
+| **Primitive** | **OpenCL concept** |
+| ------------- |--------------------|
+| `\( mapGlobal \)` | Work-items |
+| `\( mapWorkgroup \)` <br/> `\( mapLocal \)` | Work-groups |
+| `\( mapSeq \)` <br/> `\( reduceSeq \)` | Sequential implementations |
+| `\( toLocal \)`, `\( toGlobal \)` | Memory areas |
+| `\( mapVec \)`, `\( splitVec \)`, `\( joinVec \)` | Vectorisation |
+]
+
+.right-column[
+<img src="images/openclthreads.png" width="75%" />
+]
+
+---
+# 2. OpenCL Rewrite Rules
+
+- Express low-level implementation and optimisation choices
+
+.box-80[
+- Map rules:<br/>
+    `\( map~f \rightarrow mapWorkgroup~f~~|~~mapLocal~f~~|~~mapGlobal~f~~|~~mapSeq~f \)`
+
+- Local / global memory rule:<br/>
+    `\( mapLocal~f \rightarrow toLocal~(mapLocal~f) \qquad mapLocal~f \rightarrow toGlobal~(mapLocal~f) \)`
+
+- Vectorisation rules:<br/>
+    `\( map~f \rightarrow joinVec \circ map~(mapVec~f) \circ splitVec~n \)`
+
+- Fusion rule:<br/>
+    `\( reduceSeq~f~z \circ mapSeq~g \rightarrow reduceSeq~(\lambda~x~y.~~f~x~(g~y) )~z \)`
+]
+
+---
+# 3. Pattern based OpenCL Code Generation
+
+- Generate OpenCL code for each OpenCL primitive
+
+.box-70[
+.left-column[
+`\( mapGlobal~f~xs \rightarrow \quad \)`
+]
+.left-column[
+```
+for (int g_id  = get_global_id(0); g_id < n;
+         g_id += get_global_size(0)) {
+    output[g_id] = f(xs[g_id]);
+}
+```
+]
+
+.left-column[
+`\( reduceSeq~f~xs \rightarrow \quad \)`
+]
+.left-column[
+```
+T acc = z;
+for (int i = 0; i < n; i++) {
+    acc = f(acc, xs[i]);
+}
+```
+]
+<div style="clear:both;"></div>
+
+.left-column[
+`\( \qquad \vdots \)`
+]
+
+<div style="clear:both;"></div>
+
+]
+
+- A lot more details about the code generation implementation is described in our [[CGO 2017]](http://www.lift-project.org/publications/2017/steuwer17LiftIR.pdf) paper
 
 ---
 
