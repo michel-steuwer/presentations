@@ -136,3 +136,41 @@ a {
 .box-70 { width: 70%; margin: 0 auto; display: block; }
 .box-80 { width: 80%; margin: 0 auto; display: block; }
 .box-90 { width: 90%; margin: 0 auto; display: block; }
+
+.full-layover {
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  width: 1210px;
+  height: 681px;
+}
+
+.hl line {
+  stroke: rgb(0,181,209);
+  stroke-width: 4;
+}
+
+.hl rect {
+  fill: none;
+  stroke: rgb(0,181,209);
+  stroke-width: 4;
+}
+
+.hl text {
+  fill: rgb(0,181,209);
+}
+
+.dark-hl line {
+  stroke: rgb(0,56,101);
+  stroke-width: 4;
+}
+
+.dark-hl rect {
+  fill: none;
+  stroke: rgb(0,56,101);
+  stroke-width: 4;
+}
+
+.dark-hl text {
+  fill: rgb(0,56,101);
+}
