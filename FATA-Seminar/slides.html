@@ -632,6 +632,51 @@ class: split-50
 
 .center[**Ambition**: automatic generation of *performance portable* code]
 
+
+
+
+---
+# Walkthrough
+
+
+---
+# 1. Algorithmic Primitives .smaller[(a.k.a. algorithmic skeletons)]
+
+- `\( map~f~[x_1, \ldots, x_n] = [f~x_1, \ldots, f~x_n] \)`
+
+- `\( zip~[x_1, \ldots, x_n]~[y_1, \ldots, y_n] = [(x_1, y_1), \ldots, (x_n, y_n)] \)`
+
+- `\( reduce~(+)~0~[x_1, \ldots, x_n] = 0 + x_1 + \cdots + x_n \)`
+
+- `\( split~n~[x_1, \ldots, x_m] = [ [x_1, \ldots, x_n], \ldots, [x_{m-n}, \ldots, x_m]] \)`
+
+- `\( join~[ [x_1, \ldots, x_n], \ldots, [x_{m-n}, \ldots, x_m]] = [x_1, \ldots, x_m] \)`
+
+- `\( iterate~f~n~xs = iterate~f~(n-1)~(f~xs) \)` <br/>
+  `\( iterate~f~0~xs = xs \)`
+
+- `\( reorder~\sigma~[x_1, \ldots, x_n] = [x_{\sigma(1)}, \ldots, x_{\sigma(n)}] \)`
+
+---
+# 1. High-Level Programs
+
+```lift
+def scal a xs = map (λ x . x * a) xs
+
+def asum xs = reduce (+) 0 (map abs xs)
+
+def dotProduct xs ys = reduce (+) 0 (map (*) (zip xs ys))
+
+def gemv mat xs ys α β = map (+) zip(
+        map (λ row . scal α (dotProduct row xs)) mat,
+        scal β ys
+    ) 
+
+def mm A B = map (λ rowA .
+       map (λ colB . dotProduct rowA colB ) B
+    ) A
+```
+
 ---
 
 name: closing
@@ -647,16 +692,40 @@ count: false
 .center-bottom[.big[[http://www.lift-project.org/](http://www.lift-project.org/)]]
 
     </textarea>
-    <script src="https://remarkjs.com/downloads/remark-latest.min.js">
-    </script>
+    <script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/MathJax.js?config=TeX-AMS_HTML&delayStartupUntil=configured" type="text/javascript"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0-alpha2/katex.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0-alpha2/contrib/auto-render.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0-alpha2/katex.min.css">
+
     <script>
+      var renderMath = function() {
+        renderMathInElement(document.body, {delimiters: [
+            {left: "$$", right: "$$", display: true},
+            {left: "$", right: "$", display: false},
+            {left: "\\[", right: "\\]", display: true},
+            {left: "\\(", right: "\\)", display: false},
+        ]});
+      }
+
       var slideshow = remark.create({
           ratio: '16:9',
           highlightLanguage: 'c',
           highlightStyle: 'solarized-light', // light: 'idea' 'solarized-light', dark: 'monokai'
           highlightLines: true,
           highlightSpans: true
-          });
+          }); //, renderMath);
+
+      // Setup MathJax
+      MathJax.Hub.Config({
+          tex2jax: {
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre']
+          }
+      });
+
+      MathJax.Hub.Configured();
     </script>
   </body>
 </html>
