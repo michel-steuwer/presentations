@@ -842,29 +842,16 @@ count: false
     </textarea>
     <script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/MathJax.js?config=TeX-AMS_HTML&delayStartupUntil=configured" type="text/javascript"></script>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0-alpha2/katex.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0-alpha2/contrib/auto-render.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0-alpha2/katex.min.css">
+    <script src="../template/MathJax/MathJax.js?config=TeX-AMS_HTML&delayStartupUntil=configured" type="text/javascript"></script>
 
     <script>
-      var renderMath = function() {
-        renderMathInElement(document.body, {delimiters: [
-            {left: "$$", right: "$$", display: true},
-            {left: "$", right: "$", display: false},
-            {left: "\\[", right: "\\]", display: true},
-            {left: "\\(", right: "\\)", display: false},
-        ]});
-      }
-
       var slideshow = remark.create({
           ratio: '16:9',
           highlightLanguage: 'c',
           highlightStyle: 'solarized-light', // light: 'idea' 'solarized-light', dark: 'monokai'
           highlightLines: true,
           highlightSpans: true
-          }); //, renderMath);
+          });
 
       // Setup MathJax
       MathJax.Hub.Config({
