@@ -92,25 +92,39 @@ a {
   color: white;
 }
 
-.small {
-  font-size: 0.5em;
-}
+.small    { font-size: 0.5em;  }
+.smaller  { font-size: 0.75em; }
 
-.small .remark-code {
-  font-size: 1em;
-}
+.small   .remark-code { font-size: 0.5em;  }
+.smaller .remark-code { font-size: 0.75em; }
 
-.smaller {
-  font-size: 0.75em;
-}
+.bigger { font-size: 1.25em; }
+.big    { font-size: 1.5em;  }
 
-.bigger {
-  font-size: 1.25em;
-}
+.bigger .remark-code { font-size: 1.25em; }
+.big    .remark-code { font-size: 1.5em;  }
 
-.big {
-  font-size: 1.5em;
-}
+.fs-50 { font-size: 50%; }
+.fs-55 { font-size: 55%; }
+.fs-60 { font-size: 60%; }
+.fs-65 { font-size: 65%; }
+.fs-70 { font-size: 70%; }
+.fs-75 { font-size: 75%; }
+.fs-80 { font-size: 80%; }
+.fs-85 { font-size: 85%; }
+.fs-90 { font-size: 90%; }
+.fs-95 { font-size: 95%; }
+
+.fs-50 .remark-code { font-size: 50%; }
+.fs-55 .remark-code { font-size: 55%; }
+.fs-60 .remark-code { font-size: 60%; }
+.fs-65 .remark-code { font-size: 65%; }
+.fs-70 .remark-code { font-size: 70%; }
+.fs-75 .remark-code { font-size: 75%; }
+.fs-80 .remark-code { font-size: 80%; }
+.fs-85 .remark-code { font-size: 85%; }
+.fs-90 .remark-code { font-size: 90%; }
+.fs-95 .remark-code { font-size: 95%; }
 
 .left-column {float:left}
 .right-column {float:right}
