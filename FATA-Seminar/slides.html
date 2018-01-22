@@ -493,7 +493,7 @@ class: split-50
 
 
 .right-column[
-.box-90[.small[```
+.box-90[.fs-75[```
 kernel void reduce(global float* g_idata, global float* g_odata,
                    unsigned int n, local float* l_data) {
   unsigned int tid = get_local_id(0);
@@ -507,7 +507,7 @@ kernel void reduce(global float* g_idata, global float* g_odata,
   if (tid == 0) g_odata[get_group_id(0)] = l_data[0]; }
 ```]]
 .smaller[.center[↑ Unoptimised ↑ &emsp; vs. &emsp; ↓ Fully Optimised ↓]]
-.box-90[.small[```
+.box-90[.fs-65[```
 kernel void reduce(global float* g_idata, global float* g_odata,
                    unsigned int n, local volatile float* l_data) {
   unsigned int tid = get_local_id(0);
@@ -786,6 +786,7 @@ kernel void reduce6(global float* g_idata,
 
 - Reasoning similar to *The Algebra of Programming* by *Richard Bird and Oege De Moor*
 
+<div class="corner-ribbon top-right sticky blue">*</div>
 
 ---
 class: split-70, opencl-table
@@ -865,7 +866,32 @@ for (int i = 0; i < n; i++) {
 - A lot more details about the code generation implementation is described in our [CGO 2017](http://www.lift-project.org/publications/2017/steuwer17LiftIR.pdf) paper
 
 ---
-# Case Study: Matrix Multiplication
+class: split-50
+# Data Parallel Idealised Algol (DPIA) <br/> .fs-65[as a new foundation for .lift[Lift]'s compilation process]
+
+.left-column[
+- So far .lift[Lift] rewrites only functional expressions
+
+- DPIA combines functional and imperative constructs
+
+- Allows formal translation of functional programs into effient parallel imperative programs
+
+- This translation is _strategy preserving_, i.e., it preserves desissions made while rewriting the purely functional program
+
+- [Draft paper](http://michel.steuwer.info/files/publications/2017/arXiv-2017.pdf)
+]
+
+.right-column[
+![:img width: 100%; margin-top: -50px;](images/DPIAoverview.png)
+]
+
+<div style="clear: both"></div>
+Collaboration with Bob Atkey (Strathclyde) and Sam Lindley (Edinburgh)
+
+<div class="corner-ribbon top-right sticky blue">*</div>
+
+---
+# .lift[Lift] Case Study: Matrix Multiplication
 
 .box-70[![:img width: 50%](images/mm.png)]
 
@@ -971,7 +997,7 @@ untile . map (λ rowOfTilesA .
 ]
 
 ---
-# Register Blocking via Rewrite Rules
+# Register Blocking as a Macro Rule
 
 .box-80[
 `\( register~blocking = \)` <br/>
@@ -988,46 +1014,83 @@ untile . map (λ rowOfTilesA .
 .right[![:img width: 30%; margin-top: -100px;](images/blocking.png)]
 
 ---
-# Exploration Strategy
+class: split-60
+# Exploration Strategy .smaller[for Matrix Multiplication]
+
+
+<div style="width: 230px; position: absolute; top: 125px; left: 150px;"><pre><code class="haskell fs-65">matMult = λ A B .
+  map (λ rowA .
+    map (λ colB .
+      dotProduct rowA colB
+    ) (transpose B)
+  ) A
+</code></pre></div>
 
 <svg>
   <defs>
     <marker id="arrow2" markerWidth="10" markerHeight="10" refX="0" refY="3" orient="auto" markerUnits="strokeWidth">
       <path d="M0,0 L0,6 L6,3 z" fill="#555" />
     </marker>
-    <g id="one-to-many" transform="translate(1, 50)">
-      <line x1="122" y1="0" x2= "20" y2="21" stroke="#555" stroke-width="2" marker-end="url(defs.svg#arrow3)" />
-      <line x1="122" y1="0" x2= "60" y2="24" stroke="#555" stroke-width="2" marker-end="url(defs.svg#arrow3)" />
-      <line x1="122" y1="0" x2="100" y2="27" stroke="#555" stroke-width="2" marker-end="url(defs.svg#arrow3)" />
-      <line x1="122" y1="0" x2="122" y2="35" stroke="#555" stroke-width="2" marker-end="url(defs.svg#arrow3)" />
-      <line x1="122" y1="0" x2="144" y2="27" stroke="#555" stroke-width="2" marker-end="url(defs.svg#arrow3)" />
-      <line x1="122" y1="0" x2="184" y2="24" stroke="#555" stroke-width="2" marker-end="url(defs.svg#arrow3)" />
-      <line x1="122" y1="0" x2="224" y2="21" stroke="#555" stroke-width="2" marker-end="url(defs.svg#arrow3)" />
+  </defs>
+</svg>
+
+<svg class="full-layover" viewBox="0 0 1280 720">
+  <g transform="translate(150, 265)">
+    <line x1="122" y1="0" x2="90" y2="70" stroke="#555" stroke-width="2" marker-end="url(#arrow2)" />
+    <line x1="122" y1="0" x2="122" y2="80" stroke="#555" stroke-width="2" marker-end="url(#arrow2)" />
+    <line x1="122" y1="0" x2="154" y2="70" stroke="#555" stroke-width="2" marker-end="url(#arrow2)" />
+  </g>
+</svg>
+
+<div style="width: 350px; position: absolute; top: 350px; left: 100px;">
+    <img src="images/mmOpenCL.png" width="100%" />
+</div>
+
+<div style="width: 350px; position: absolute; top: 375px; left: 75px;">
+    <img src="images/mmOpenCL.png" width="100%" />
+</div>
+
+<div style="width: 350px; position: absolute; top: 400px; left: 50px;">
+    <img src="images/mmOpenCL.png" width="100%" />
+</div>
+
+<svg>
+  <defs>
+    <g id="one-to-many" transform="translate(0, 50)">
+      <line x1="122" y1="0" x2= "20" y2="21" stroke="#555" stroke-width="2" marker-end="url(#arrow2)" />
+      <line x1="122" y1="0" x2= "60" y2="24" stroke="#555" stroke-width="2" marker-end="url(#arrow2)" />
+      <line x1="122" y1="0" x2="100" y2="27" stroke="#555" stroke-width="2" marker-end="url(#arrow2)" />
+      <line x1="122" y1="0" x2="122" y2="35" stroke="#555" stroke-width="2" marker-end="url(#arrow2)" />
+      <line x1="122" y1="0" x2="144" y2="27" stroke="#555" stroke-width="2" marker-end="url(#arrow2)" />
+      <line x1="122" y1="0" x2="184" y2="24" stroke="#555" stroke-width="2" marker-end="url(#arrow2)" />
+      <line x1="122" y1="0" x2="224" y2="21" stroke="#555" stroke-width="2" marker-end="url(#arrow2)" />
     </g>
   </defs>
 </svg>
 
 <svg class="full-layover" viewBox="0 0 1280 720">
-  <g transform="translate(150, 175)">
+  <g transform="translate(700, 175)">
 
   <g transform="translate(0, 0)">
     <rect x="0" y="0" width="245" height="50" rx="10" ry="10" style="fill:white; stroke:black; stroke-width: 2;" />
     <text x="20" y="30">High-Level Expression</text>
+    <text x="-100" y="30">1</text>
   </g>
 
-  <use xlink:href="defs.svg#one-to-many2" transform="translate(0, 0)" />
+  <use xlink:href="#one-to-many" transform="translate(0, 0)" />
   <text x="250" y="80">Macro Rules</text>
 
   <g transform="translate(0, 100)">
     <rect x="0" y="0" width="245" height="50" rx="10" ry="10" style="fill:white; stroke:black; stroke-width: 2;" />
     <text x="25" y="30">Rewritten Expression</text>
+    <!-- <text x="-100" y="30">8</text> -->
   </g>
 
   </g>
 </svg>
 
 <svg class="full-layover" viewBox="0 0 1280 720">
-  <g transform="translate(150, 175)">
+  <g transform="translate(700, 175)">
 
   <use xlink:href="#one-to-many" transform="translate(0, 100)" />
   <text x="250" y="180">Map to OpenCL</text>
@@ -1035,13 +1098,14 @@ untile . map (λ rowOfTilesA .
   <g transform="translate(0, 200)">
     <rect x="0" y="0" width="245" height="50" rx="10" ry="10" style="fill:white; stroke:black; stroke-width: 2;" />
     <text x="27" y="30">Lowered Expression</text>
+    <!-- <text x="-100" y="30">760</text> -->
   </g>
 
   </g>
 </svg>
 
 <svg class="full-layover" viewBox="0 0 1280 720">
-  <g transform="translate(150, 175)">
+  <g transform="translate(700, 175)">
 
   <use xlink:href="#one-to-many" transform="translate(0, 200)" />
   <text x="250" y="280">Parameter Mapping</text>
@@ -1049,13 +1113,14 @@ untile . map (λ rowOfTilesA .
   <g transform="translate(0, 300)">
     <rect x="0" y="0" width="245" height="50" rx="10" ry="10" style="fill:white; stroke:black; stroke-width: 2;" />
     <text x="20" y="30">Specialised Expression</text>
+    <!-- <text x="-100" y="30">46 000</text> -->
   </g>
 
   </g>
 </svg>
 
 <svg class="full-layover" viewBox="0 0 1280 720">
-  <g transform="translate(150, 175)">
+  <g transform="translate(700, 175)">
 
   <g transform="translate(0, 350)">
     <line x1="122" y1="0" x2="122" y2="35" stroke="#555" stroke-width="2" marker-end="url(#arrow2)" />
@@ -1065,11 +1130,129 @@ untile . map (λ rowOfTilesA .
   <g transform="translate(0, 400)">
     <rect x="0" y="0" width="245" height="50" rx="10" ry="10" style="fill:white; stroke:black; stroke-width: 2;" />
     <text x="60" y="30">OpenCL Code</text>
+    <!-- <text x="-100" y="30">46 000</text> -->
+    <text x="-100" y="30" style="font-style:italic;">many</text>
   </g>
 
   </g>
 
 </svg>
+
+---
+class: split-50
+# Heuristics for Matrix Multiplication
+
+.left-column[
+- **For Macro Rules**:
+    - Nesting depth
+    - Distance of addition and multiplication
+    - Number of times rules are applied
+
+- **For Map to OpenCL**:
+    - Fixed parallelism mapping
+    - Limited choices for mapping to local and global memory
+    - Follow best practice
+]
+.right-column[
+- **For Parameter Mapping**:
+    - Amount of memory used
+        - Global
+        - Local
+        - Registers
+    - Amount of parallelism
+        - Work-items
+        - Workgroups
+]
+
+<div style="clear: both"></div>
+
+.center[_Could we design a language which allows programmers to control the rewriting?_]
+.center[_Is there a connection to automatic theorem proving and proof tactics?_]
+
+<div class="corner-ribbon top-right sticky blue">*</div>
+
+---
+# Exploration in Numbers .smaller[for Matrix Multiplication]
+
+.box-80[![:img width: 100%](images/mmExploration.png)]
+
+---
+# Exploration Space for Matrix Multiplication
+
+.box-70[![:img width: 100%](images/mmSpace.png)]
+
+.center[Only few OpenCL kernel with very good performance ☹️️]
+
+---
+# Exploration Space for Matrix Multiplication
+
+.box-60[![:img width: 100%; margin-top:-30px;](images/mmRandomisedSearch.png)]
+
+.center[Even with a simple random search strategy one can expect to find a good performing kernel quickly 🙂]
+
+---
+# Performance Results Matrix Multiplication
+
+![:img width: 100%; margin-top: 40px; margin-bottom: 60px;](images/mmPerformance.png)
+
+.center[
+Performance close or better than hand-tuned MAGMA library!
+]
+
+---
+# Performance Portability Matrix Multiplication
+
+.box-60[![:img width: 100%; margin-top:-30px;](images/mmPortability.png)]
+
+.center[
+Generated kernels are specialised for device and input size.<br/>
+Truly _portable_ kernel does not exist.
+]
+
+---
+# Desktop GPUs vs. Mobile GPUs
+
+.box-80[![:img width: 100%](images/mmMobile.png)]
+
+.center[
+Performance portable even for mobile GPUs!
+
+.smaller[Much more details our [CASES 2016](http://www.lift-project.org/publications/2016/steuwer16beyondAutoTuning.pdf) paper.]
+]
+
+---
+<h1 style="position: absolute; top: 225px; left: 490px;" >.lift[Lift] Team</h1>
+
+<div style="text-align: center; font-weight: bold; font-size: 50%; ">
+
+![:team-member Adam Harries, width: 100px; top: 423px; left: 540px;](images/adam.jpg)
+![:team-member Christophe Dubach, width: 100px; top: 377px; left: 412px;](images/cdubach.png)
+![:team-member Bastian Hagedorn, width: 100px; top: 259px; left: 344px;](images/bastian.jpg)
+![:team-member Toomas Remmelg, width: 100px; top: 124px; left: 368px;](images/toomas.jpg)
+![:team-member Larisa Stolzfus, width: 100px; top: 37px; left: 472px;](images/larisa.jpg)
+![:team-member Naums Mogers, width: 100px; top: 37px; left: 608px;](images/naums.jpg)
+![:team-member Michel Steuwer, width: 100px; top: 124px; left: 712px;](images/msteuwer.jpg)
+![:team-member Lu Li, width: 100px; top: 259px; left: 736px;](images/lu.jpg)
+![:team-member Federico Pizzuti, width: 100px; top: 377px; left: 668px;](images/federico.jpg)
+
+</div>
+
+![:img height: 60px; position: absolute; top: 580px; left: 200px;](images/GlasgowLogo.png)
+![:img height: 60px; position: absolute; top: 580px; left: 450px;](images/EdinburghLogo.png)
+![:img height: 75px; position: absolute; top: 565px; left: 750px;](images/WWULogo.png)
+
+---
+# .lift[Lift] is Open-Source Software
+
+<a href="https://github.com/lift-project/lift"><img style="position: absolute; top: 0; right: 0; border: 0;" src="images/fork-me.png" alt="Fork me on GitHub" data-canonical-src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png"></a>
+
+.center[
+[http://www.lift-project.org](http://www.lift-project.org)
+
+[https://github.com/lift-project/lift](https://github.com/lift-project/lift)
+
+![:img width: 80%; margin-top: 50px](images/github.png)
+]
 
 ---
 name: closing
@@ -1098,7 +1281,13 @@ count: false
       remark.macros['img'] = function (style) {
         return '<img src="' + this + '" style="' + style + '" />';
       };
+
+      remark.macros['team-member'] = function (name, style) {
+          return '<div style="position: absolute; ' + style + '"><img src="' + this + '" style="border-radius: 50%;" width="100%" />' + name + '</div>';
+      }
     </script>
+
+<!-- <div style="width: 230px; position: absolute; top: 125px; left: 150px;"><pre><code class="haskell fs-65">matMult = λ A B . -->
 
     <script>
       var renderMath = function() {
