@@ -1,7 +1,16 @@
 <svg>
   <defs>
-    <marker id="arrow" markerWidth="10" markerHeight="10" refX="0" refY="3" orient="auto" markerUnits="strokeWidth">
+    <marker id="arrow3" markerWidth="10" markerHeight="10" refX="0" refY="3" orient="auto" markerUnits="strokeWidth">
       <path d="M0,0 L0,6 L6,3 z" fill="#555" />
     </marker>
+    <g id="one-to-many2" transform="translate(1, 50)">
+      <line x1="122" y1="0" x2= "20" y2="21" stroke="#555" stroke-width="2" marker-end="url(#arrow3)" />
+      <line x1="122" y1="0" x2= "60" y2="24" stroke="#555" stroke-width="2" marker-end="url(#arrow3)" />
+      <line x1="122" y1="0" x2="100" y2="27" stroke="#555" stroke-width="2" marker-end="url(#arrow3)" />
+      <line x1="122" y1="0" x2="122" y2="35" stroke="#555" stroke-width="2" marker-end="url(#arrow3)" />
+      <line x1="122" y1="0" x2="144" y2="27" stroke="#555" stroke-width="2" marker-end="url(#arrow3)" />
+      <line x1="122" y1="0" x2="184" y2="24" stroke="#555" stroke-width="2" marker-end="url(#arrow3)" />
+      <line x1="122" y1="0" x2="224" y2="21" stroke="#555" stroke-width="2" marker-end="url(#arrow3)" />
+    </g>
   </defs>
 </svg>
