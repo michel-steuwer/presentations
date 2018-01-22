@@ -1221,6 +1221,64 @@ Performance portable even for mobile GPUs!
 ]
 
 ---
+exclude: true
+class: split-50
+# Applications of .lift[Lift] 1/2
+
+.left-column[
+.center[_Efficient Neural Network Code Generation<br/> for Mobile GPUs_]
+
+.center[![:img width: 60%;](images/nn.png)]
+
+.center[ ↓ .lift[Lift] ↓ ]
+
+.center[![:img width: 30%;](images/smartphone-icon.png)]
+
+]
+
+
+
+.right-column[
+
+.center[_Performance Portable Computer Vision and<br/> Machine Learning_]
+
+.center[ ![:img width: 60%](images/hololense.jpg) ]
+
+]
+
+---
+exclude: true
+# Applications of .lift[Lift] 2/2
+
+![:img width: 500px; position: absolute; padding:8px; border:1px solid #999999; box-shadow: 1px 1px 5px #999;](images/ASPLOS.png)
+
+![:img width: 400px; position: absolute; left: 700px; top: 150px;](images/ConstraintsFlow.png)
+
+<div style="position: absolute; left: 800px; top: 600px;">
+    <a href="http://michel.steuwer.info/publications/2018/ASPLOS/">ASPLOS paper</a>
+</div>
+
+
+---
+# Possible Future Directions
+
+- Can we apply similar ideas to other settings, e.g., distributed systems?
+    - What formalism do we use to rewrite programs in distributed systems?
+    - Can we have rules minimising communication or trade of computation vs. communication?
+
+- Can we build composable hierarchies of code generators reflecting heterogeneous systems?
+
+- How can we reason about the achievable performance?<br/> How do we know a generated program is _good_ or that we can't do better?
+
+- How do we know that our language is expressive enough for an application domain?
+
+- How let we programmers influence the program generation process?
+
+- ...
+
+<div class="corner-ribbon top-right sticky blue">*</div>
+
+---
 <h1 style="position: absolute; top: 225px; left: 490px;" >.lift[Lift] Team</h1>
 
 <div style="text-align: center; font-weight: bold; font-size: 50%; ">
