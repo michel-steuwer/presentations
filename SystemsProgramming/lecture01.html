@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Systems Programming</title>
+    <meta charset="utf-8">
+    <style>
+      @import url(../template/lift.css);
+      @import url(../template/glasgow.css);
+      @import url(../template/print.css);
+    </style>
+  </head>
+  <body>
+    <textarea id="source">
+
+name: title
+background-image: url(../template/images/Title16x9.jpg)
+class: title-slide
+count: false
+
+# Systems Programming
+## Lecture 1  .smaller[| 24.smaller[th] of September 2018]
+
+### Michel Steuwer .smaller[| [http://michel.steuwer.info](http://michel.steuwer.info/) | [michel.steuwer@glasgow.ac.uk](mailto:michel.steuwer@glasgow.ac.uk)]
+
+---
+# Systems Programming (H)
+
+- Lecturer:
+    - **Michel Steuwer** | [http://michel.steuwer.info](http://michel.steuwer.info/)
+    - Room [**M111**](http://michel.steuwer.info/contact) in the School of Computing Science
+    - Email: [michel.steuwer@glasgow.ac.uk](mailto:michel.steuwer@glasgow.ac.uk)
+
+<div style="width: 150px; position: absolute; top: 150px; left: 800px">
+    <img style="vertical-align:middle; clip-path: circle(60px at center);" src="images/msteuwer.jpg" width="80%"/>
+</div>
+
+- Lab assistants:
+    - Person 1
+    - Person 2
+
+- Schedule:
+    - Two-hour lecture each week: **Monday 10 - 12**
+    - Labs: **Monday**
+
+---
+# Learning outcomes - Systems Programming (H)
+
+1. Demonstrate competence in **low-level systems programming**
+
+1. **Design, implement and explain the behaviour** of low-level programs written in a systems language
+
+1. Explain the concepts of **stack and heap allocation**, **pointers**, and **memory ownership**, including demonstrating an understanding of issues such as **memory leaks**, **buffer overflows**, **use-after-free**, and **race conditions**
+
+1. Explain how **data structures are represented**, and how this interacts with caching and virtual memory, and to be able to demonstrate the performance impact of such issues
+
+1. Discuss and reason about **concurrency**, **race conditions**, and the **system memory model**
+
+1. **Build** well-structured **concurrent systems programs** of moderate size, using libraries and static analysis tools appropriately.
+
+- In this course we will use `C` and `C++` as they are the two most important systems programming languages
+
+---
+# Reading material
+
+- No book required for this course (programming by yourself is _the key_ to understanding)
+
+- Two introductory recommendations (left) and the two definet treatments of C and C++ (right):
+
+<div style="text-align: center">
+    <div style="width: 25%; float: left;">
+        <img src="images/UnderstandingPointersCover.jpg" width="60%"/><br/>
+        <span style="font-size: 90%">Focus on most<br/> challenging part of C:<br/> memory management</span>
+    </div>
+    <div style="width: 25%; float: left;">
+        <img src="images/ATourOfCpp.jpg" width="60%"/><br/>
+        <span style="font-size: 90%">Good overview of the most important features of C++<br/>
+        Also available for free at <a href="https://isocpp.org/tour">isocpp.org/tour</a></span>
+    </div>
+    <div style="width: 25%; float: left;">
+        <img src="images/C_Book_Cover.jpg" width="60%"/><br/>
+        <span style="font-size: 90%">Reference by creators of C<br/> Still good reference today</span>
+    </div>
+    <div style="width: 25%; float: left;">
+        <img src="images/Cpp_Book_Cover.jpg" width="60%"/><br/>
+        <span style="font-size: 90%">In-depth (1376 pages) treatment of C++ by the creator of the language</span>
+    </div>
+    <div style="clear: both;"></div>
+</div>
+
+---
+# Course methodology
+
+- This course is new, replacing the prior _Advanced Programming_ course
+
+- I not only want to change the content, but also _how_ the course is delivered
+
+- I find teaching programming without actively programming silly!
+
+- Emphasis on **_live coding_** in the lectures instead of reading slides
+
+- This is much better with plenty of student interactions, so **ask questions!**<br/>
+  We will find the answer together by trying it out and writing programs
+
+---
+# Your Feedback and Questions
+
+- Your feedback is important! It will change the material of the course and the way it is delivered
+
+- You can use [![:img height: 40px; vertical-align: middle](images/Padlet.png)Padlet](https://padlet.com/michel_steuwer/questions) to post questions during the lecture
+
+- Use the forum on the course ![:img height: 30px; vertical-align: bottom](images/moodle-logo.png) page to ask questions inbetween lectures
+
+- Email me _only_ with personal matters
+
+---
+# What languages do you speak?
+
+- Many different programming languages for many different domains
+
+- 
+
+---
+# What is *Systems Programming*?
+
+---
+# History of Systems Programming Languages
+
+---
+# A quiz of Python vs. C
+
+---
+name: closing
+background-image: url(../template/images/Closing16x9.jpg)
+class: title-slide, text-white
+count: false
+
+# Systems Programming
+## Lecture 1  .smaller[| 24.smaller[th] of September 2018]
+
+### Michel Steuwer .smaller[| [http://michel.steuwer.info](http://michel.steuwer.info/) | [michel.steuwer@glasgow.ac.uk](mailto:michel.steuwer@glasgow.ac.uk)]
+
+    </textarea>
+    <script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/MathJax.js?config=TeX-AMS_HTML&delayStartupUntil=configured" type="text/javascript"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0-alpha2/katex.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0-alpha2/contrib/auto-render.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0-alpha2/katex.min.css">
+
+    <script>
+    // macros
+    remark.macros['img'] = function (style) {
+        return '<img src="' + this + '" style="' + style + '" />';
+    };
+
+    remark.macros['team-member'] = function (name, style) {
+        return '<div style="position: absolute; ' + style + '"><img src="' + this + '" style="border-radius: 50%;" width="100%" />' + name + '</div>';
+    }
+    </script>
+
+    <script>
+      var renderMath = function() {
+        renderMathInElement(document.body, {delimiters: [
+            {left: "$$", right: "$$", display: true},
+            {left: "$", right: "$", display: false},
+            {left: "\\[", right: "\\]", display: true},
+            {left: "\\(", right: "\\)", display: false},
+        ]});
+      }
+
+      var slideshow = remark.create({
+          ratio: '16:9',
+          highlightLanguage: 'c',
+          highlightStyle: 'solarized-light', // light: 'idea' 'solarized-light', dark: 'monokai'
+          highlightLines: true,
+          highlightSpans: true
+          }); //, renderMath);
+
+      // Setup MathJax
+      MathJax.Hub.Config({ tex2jax: { skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'] } });
+      MathJax.Hub.Configured();
+    </script>
+  </body>
+</html>
