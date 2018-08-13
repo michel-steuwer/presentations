@@ -1,14 +1,17 @@
 @import url(https://fonts.googleapis.com/css?family=Raleway:400,400i,700,700i);
 @import url(https://fonts.googleapis.com/css?family=Open+Sans:400,400i,700,700i);
+@import url(https://fonts.googleapis.com/css?family=Lato:400,400i,700,700i);
+@import url(https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,400i,700,700i);
 @import url(https://fonts.googleapis.com/css?family=Fira+Mono:400,500,700);
+@import url(https://fonts.googleapis.com/css?family=Source+Code+Pro:400,500,700);
 
-body { font-family: 'Open Sans'; }
+body { font-family: 'Open Sans', 'Lato', 'Source Sans Pro', sans-serif; }
 h1, h2, h3 {
-  font-family: 'Raleway';
+  font-family: 'Lato', 'Raleway', sans-serif;
   font-weight: normal;
 }
 
-.remark-code, .remark-inline-code { font-family: 'Fira Mono'; }
+.remark-code, .remark-inline-code { font-family: 'Source Code Pro', 'Fira Mono', monospace; }
 
 .remark-code-span-highlighted { padding: 0 2px 0 2px; }
 
@@ -92,25 +95,39 @@ a {
   color: white;
 }
 
-.small {
-  font-size: 0.5em;
-}
+.small    { font-size: 0.5em;  }
+.smaller  { font-size: 0.75em; }
 
-.small .remark-code {
-  font-size: 1em;
-}
+.small   .remark-code { font-size: 0.5em;  }
+.smaller .remark-code { font-size: 0.75em; }
 
-.smaller {
-  font-size: 0.75em;
-}
+.bigger { font-size: 1.25em; }
+.big    { font-size: 1.5em;  }
 
-.bigger {
-  font-size: 1.25em;
-}
+.bigger .remark-code { font-size: 1.25em; }
+.big    .remark-code { font-size: 1.5em;  }
 
-.big {
-  font-size: 1.5em;
-}
+.fs-50 { font-size: 50%; }
+.fs-55 { font-size: 55%; }
+.fs-60 { font-size: 60%; }
+.fs-65 { font-size: 65%; }
+.fs-70 { font-size: 70%; }
+.fs-75 { font-size: 75%; }
+.fs-80 { font-size: 80%; }
+.fs-85 { font-size: 85%; }
+.fs-90 { font-size: 90%; }
+.fs-95 { font-size: 95%; }
+
+.fs-50 .remark-code { font-size: 50%; }
+.fs-55 .remark-code { font-size: 55%; }
+.fs-60 .remark-code { font-size: 60%; }
+.fs-65 .remark-code { font-size: 65%; }
+.fs-70 .remark-code { font-size: 70%; }
+.fs-75 .remark-code { font-size: 75%; }
+.fs-80 .remark-code { font-size: 80%; }
+.fs-85 .remark-code { font-size: 85%; }
+.fs-90 .remark-code { font-size: 90%; }
+.fs-95 .remark-code { font-size: 95%; }
 
 .left-column {float:left}
 .right-column {float:right}
@@ -174,3 +191,78 @@ a {
 .dark-hl text {
   fill: rgb(0,56,101);
 }
+
+
+
+/* The ribbons */
+
+.corner-ribbon{
+  width: 200px;
+  background: #e43;
+  position: absolute;
+  top: 25px;
+  left: -50px;
+  text-align: center;
+  line-height: 50px;
+  letter-spacing: 1px;
+  color: #f0f0f0;
+  transform: rotate(-45deg);
+  -webkit-transform: rotate(-45deg);
+}
+
+/* Custom styles */
+
+.corner-ribbon.sticky{
+  position: fixed;
+}
+
+.corner-ribbon.shadow{
+  box-shadow: 0 0 3px rgba(0,0,0,.3);
+}
+
+/* Different positions */
+
+.corner-ribbon.top-left{
+  top: 25px;
+  left: -50px;
+  transform: rotate(-45deg);
+  -webkit-transform: rotate(-45deg);
+}
+
+.corner-ribbon.top-right{
+  top: 25px;
+  right: -50px;
+  left: auto;
+  transform: rotate(45deg);
+  -webkit-transform: rotate(45deg);
+}
+
+.corner-ribbon.bottom-left{
+  top: auto;
+  bottom: 25px;
+  left: -50px;
+  transform: rotate(45deg);
+  -webkit-transform: rotate(45deg);
+}
+
+.corner-ribbon.bottom-right{
+  top: auto;
+  right: -50px;
+  bottom: 25px;
+  left: auto;
+  transform: rotate(-45deg);
+  -webkit-transform: rotate(-45deg);
+}
+
+/* Colors */
+
+.corner-ribbon.white{background: #f0f0f0; color: #555;}
+.corner-ribbon.black{background: #333;}
+.corner-ribbon.grey{background: #999;}
+.corner-ribbon.blue{background: #39d;}
+.corner-ribbon.green{background: #2c7;}
+.corner-ribbon.turquoise{background: #1b9;}
+.corner-ribbon.purple{background: #95b;}
+.corner-ribbon.red{background: #e43;}
+.corner-ribbon.orange{background: #e82;}
+.corner-ribbon.yellow{background: #ec0;}

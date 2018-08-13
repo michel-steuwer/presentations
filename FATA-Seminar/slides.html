@@ -92,16 +92,13 @@ class: split-40
 
 - Investigating complexity and efficiency of optimisations
 
-.box-70[
-<img src="images/reduction.png" width="100%" />
-]
+.box-70[![:img width: 100%](images/reduction.png)]
 
 ---
 # Parallel Reduction in OpenCL
 
 .left[.text-white[-]]
-.box-70[
-```
+.box-70[```
 kernel void reduce(global float* g_idata, global float* g_odata,
                    unsigned int n, local float* l_data) {
   unsigned int tid = get_local_id(0);
@@ -118,8 +115,7 @@ kernel void reduce(global float* g_idata, global float* g_odata,
 
   if (tid == 0) g_odata[get_group_id(0)] = l_data[0];
 }
-```
-]
+```]
 
 ---
 count: false
@@ -134,8 +130,7 @@ count: false
 </svg>
 
 .left[**Kernel** function exectued in parallel by multiple **work-items**]
-.box-70[
-```
+.box-70[```
 kernel void reduce(global float* g_idata, global float* g_odata,
                    unsigned int n, local float* l_data) {
   unsigned int tid = get_local_id(0);
@@ -152,8 +147,7 @@ kernel void reduce(global float* g_idata, global float* g_odata,
 
   if (tid == 0) g_odata[get_group_id(0)] = l_data[0];
 }
-```
-]
+```]
 
 .center[**Work-items** are identified by a unique **global id**]
 
@@ -173,8 +167,7 @@ count: false
 </svg>
 
 .right[**Local id** within work-group]
-.box-70[
-```
+.box-70[```
 kernel void reduce(global float* g_idata, global float* g_odata,
                    unsigned int n, local float* l_data) {
   unsigned int tid = get_local_id(0);
@@ -191,8 +184,7 @@ kernel void reduce(global float* g_idata, global float* g_odata,
 
   if (tid == 0) g_odata[get_group_id(0)] = l_data[0];
 }
-```
-]
+```]
 
 .center[**Work-items** are grouped into **work-groups**]
 
@@ -221,8 +213,7 @@ count: false
 <div style="float: right; margin-right: 330px;">Small, but fast <strong>local</strong> memory</div>
 <div style="clear: both"></div>
 
-.box-70[
-```
+.box-70[```
 kernel void reduce(global float* g_idata, global float* g_odata,
                    unsigned int n, local float* l_data) {
   unsigned int tid = get_local_id(0);
@@ -239,8 +230,7 @@ kernel void reduce(global float* g_idata, global float* g_odata,
 
   if (tid == 0) g_odata[get_group_id(0)] = l_data[0];
 }
-```
-]
+```]
 
 .left[Memory **barriers** for consistency]
 
@@ -254,8 +244,7 @@ count: false
 </svg>
 
 .left[Potential **deadlock**!]
-.box-70[
-```
+.box-70[```
 kernel void reduce(global float* g_idata, global float* g_odata,
                    unsigned int n, local float* l_data) {
   unsigned int tid = get_local_id(0);
@@ -272,8 +261,7 @@ kernel void reduce(global float* g_idata, global float* g_odata,
 
   if (tid == 0) g_odata[get_group_id(0)] = l_data[0];
 }
-```
-]
+```]
 
 ---
 count: false
@@ -285,8 +273,7 @@ count: false
 </svg>
 
 .left[Potential **deadlock**!]
-.box-70[
-```
+.box-70[```
 kernel void reduce(global float* g_idata, global float* g_odata,
                    unsigned int n, local float* l_data) {
   unsigned int tid = get_local_id(0);
@@ -303,16 +290,14 @@ kernel void reduce(global float* g_idata, global float* g_odata,
 
   if (tid == 0) g_odata[get_group_id(0)] = l_data[0];
 }
-```
-]
+```]
 
 .center[**Functionally correct implementations in OpenCL are hard!**]
 
 ---
 # 1. Version: .smaller[Unoptimised Reduction Implementation]
 
-.box-70[
-```
+.box-70[```
 kernel void reduce(global float* g_idata, global float* g_odata,
                    unsigned int n, local float* l_data) {
   unsigned int tid = get_local_id(0);
@@ -329,14 +314,12 @@ kernel void reduce(global float* g_idata, global float* g_odata,
 
   if (tid == 0) g_odata[get_group_id(0)] = l_data[0];
 }
-```
-]
+```]
 
 ---
 # 2. Version: .smaller[Avoid Divergent Branching]
 
-.box-70[
-```
+.box-70[```
 kernel void reduce(global float* g_idata, global float* g_odata,
                    unsigned int n, local float* l_data) {
   unsigned int tid = get_local_id(0);
@@ -354,14 +337,12 @@ kernel void reduce(global float* g_idata, global float* g_odata,
 
   if (tid == 0) g_odata[get_group_id(0)] = l_data[0];
 }
-```
-]
+```]
 
 ---
 # 3. Version: .smaller[Avoid Interleaved Addressing]
 
-.box-70[
-```
+.box-70[```
 kernel void reduce(global float* g_idata, global float* g_odata,
                    unsigned int n, local float* l_data) {
   unsigned int tid = get_local_id(0);
@@ -378,14 +359,12 @@ kernel void reduce(global float* g_idata, global float* g_odata,
 
   if (tid == 0) g_odata[get_group_id(0)] = l_data[0];
 }
-```
-]
+```]
 
 ---
 # 4. Version: .smaller[Increase Comp. Intensity per Work-Item]
 
-.box-70[
-```
+.box-70[```
 kernel void reduce(global float* g_idata, global float* g_odata,
                    unsigned int n, local float* l_data) {
   unsigned int tid = get_local_id(0);
@@ -406,14 +385,12 @@ kernel void reduce(global float* g_idata, global float* g_odata,
 
   if (tid == 0) g_odata[get_group_id(0)] = l_data[0];
 }
-```
-]
+```]
 
 ---
 # 5. Version: .smaller[Avoid Synchronisation inside a Warp]
 
-.box-70[
-```
+.box-70[```
 kernel void reduce(global float* g_idata, global float* g_odata,
                    unsigned int n, local `volatile` float* l_data){
   unsigned int tid = get_local_id(0);
@@ -437,14 +414,12 @@ kernel void reduce(global float* g_idata, global float* g_odata,
   `  if (WG_SIZE >=  2) { l_data[tid] += l_data[tid+ 1]; } }`
   if (tid == 0) g_odata[get_group_id(0)] = l_data[0];
 }
-```
-]
+```]
 
 ---
 # 6. Version: .smaller[Complete Loop Unrolling]
 
-.box-70[
-```
+.box-70[```
 kernel void reduce(global float* g_idata, global float* g_odata,
                    unsigned int n, local volatile float* l_data){
   unsigned int tid = get_local_id(0);
@@ -468,14 +443,12 @@ kernel void reduce(global float* g_idata, global float* g_odata,
     if (WG_SIZE >=  4) { l_data[tid] += l_data[tid+ 2]; }
     if (WG_SIZE >=  2) { l_data[tid] += l_data[tid+ 1]; } }
   if (tid == 0) g_odata[get_group_id(0)] = l_data[0]; }
-```
-]
+```]
 
 ---
 # 7. Version: .smaller[Fully Optimised Implementation]
 
-.box-70[
-```
+.box-70[```
 kernel void reduce(global float* g_idata, global float* g_odata,
                    unsigned int n, local volatile float* l_data){
   unsigned int tid = get_local_id(0);
@@ -502,8 +475,7 @@ kernel void reduce(global float* g_idata, global float* g_odata,
     if (WG_SIZE >=  4) { l_data[tid] += l_data[tid+ 2]; }
     if (WG_SIZE >=  2) { l_data[tid] += l_data[tid+ 1]; } }
   if (tid == 0) g_odata[get_group_id(0)] = l_data[0]; }
-```
-]
+```]
 
 ---
 class: split-50
@@ -521,8 +493,7 @@ class: split-50
 
 
 .right-column[
-.box-90[.small[
-```
+.box-90[.fs-75[```
 kernel void reduce(global float* g_idata, global float* g_odata,
                    unsigned int n, local float* l_data) {
   unsigned int tid = get_local_id(0);
@@ -534,11 +505,9 @@ kernel void reduce(global float* g_idata, global float* g_odata,
           l_data[tid] += l_data[tid + s];
       barrier(CLK_LOCAL_MEM_FENCE); }
   if (tid == 0) g_odata[get_group_id(0)] = l_data[0]; }
-```
-]]
+```]]
 .smaller[.center[↑ Unoptimised ↑ &emsp; vs. &emsp; ↓ Fully Optimised ↓]]
-.box-90[.small[
-```
+.box-90[.fs-65[```
 kernel void reduce(global float* g_idata, global float* g_odata,
                    unsigned int n, local volatile float* l_data) {
   unsigned int tid = get_local_id(0);
@@ -563,16 +532,13 @@ kernel void reduce(global float* g_idata, global float* g_odata,
     if (WG_SIZE >=  4) { l_data[tid] += l_data[tid+ 2]; }
     if (WG_SIZE >=  2) { l_data[tid] += l_data[tid+ 1]; } }
   if (tid == 0) g_odata[get_group_id(0)] = l_data[0]; }
-```
-]]
+```]]
 ]
 
 ---
 # Performance Results Nvidia
 
-.box-50[
-<img src="images/nvidiaReduction.png" width="100%" />
-]
+.box-50[![:img width: 100%](images/nvidiaReduction.png)]
 
 - ... Yes! Optimising improves performance by a factor of **10**!
 
@@ -583,17 +549,9 @@ class: split-50
 
 # Performance Results AMD and Intel
 
-.left-column[
-.box-80[
-<img src="images/amdReduction.png" width="100%" />
-]
-]
+.left-column[.box-80[![:img width: 100%](images/amdReduction.png)]]
 
-.right-column[
-.box-80[
-<img src="images/intelReduction.png" width="100%" />
-]
-]
+.right-column[.box-80[![:img width: 100%](images/intelReduction.png)]]
 
 .clear-columns[]
 
@@ -626,21 +584,110 @@ class: split-50
     </a></text>
 </svg>
 
-.box-60[
-<img src="images/liftOverview.png" width="100%" />
-]
+.box-60[![:img width: 100%](images/liftOverview.png)]
 
 .center[**Ambition**: automatic generation of *performance portable* code]
 
-
-
-
 ---
 # Walkthrough
+<svg>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="0" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L6,3 z" fill="#555" />
+    </marker>
+  </defs>
+</svg>
 
+<svg class="full-layover" viewBox="0 0 1280 720">
+    <text x="100" y="200" style="font-size: 125%;">①</text>
+    <foreignObject x="140" y="160" width="375" height="60"><div>
+      \( sum~xs = reduce~(+)~0~xs \)
+    </div></foreignObject>
+
+    <line x1="300" y1="230" x2="300" y2="320" stroke="#555" stroke-width="4" marker-end="url(#arrow)" />
+    <rect x="225" y="260" width="100" height="30" style="fill:rgb(255,255,255);" />
+    <text x="225" y="280" style="font-size: 125%;"> rewrite rules </text>
+
+    <g transform="translate(100, 400)">
+        <text style="font-size: 125%;">②</text>
+        <foreignObject x="40" y="-40" width="450" height="400"><div>
+<pre><code class="haskell" style="font-size: 50%;">
+vecSum = reduce (+) 0 . join . mapWorkgroup (
+    join . toGlobal (mapLocal (mapSeq id)) . split 1 .
+    join . mapWarp (
+      join . mapLane (reduceSeq (+) 0) . split 2 . reorder (stride  1) .
+      join . mapLane (reduceSeq (+) 0) . split 2 . reorder (stride  2) .
+      join . mapLane (reduceSeq (+) 0) . split 2 . reorder (stride  4) .
+      join . mapLane (reduceSeq (+) 0) . split 2 . reorder (stride  8) .
+      join . mapLane (reduceSeq (+) 0) . split 2 . reorder (stride 16) .
+      join . mapLane (reduceSeq (+) 0) . split 2 . reorder (stride 32)
+    ) . split 64 .
+    join . mapLocal (reduceSeq (+) 0) . split 2 . reorder (stride 64) .
+    join . toLocal (mapLocal (reduceSeq (+) 0)) .
+    split (blockSize / 128) . reorder (stride 128)
+  ) . split blockSize
+
+</code></pre>
+        </div></foreignObject>
+    </g>
+
+    <line x1="500" y1="350" x2="600" y2="230" stroke="#555" stroke-width="4" marker-end="url(#arrow)" />
+    <rect x="480" y="260" width="100" height="30" style="fill:rgb(255,255,255);" />
+    <text x="475" y="280" style="font-size: 125%;"> code generation </text>
+
+    <g transform="translate(700, 100)">
+        <text style="font-size: 125%;">③</text>
+        <foreignObject x="40" y="-40" width="450" height="800"><div>
+<pre><code class="c" style="font-size: 50%;">
+kernel void reduce6(global float* g_idata,
+                    global float* g_odata,
+                    unsigned int n,
+                    local volatile float* l_data) {
+    unsigned int tid = get_local_id(0);
+    unsigned int i   = get_group_id(0) * (get_local_size(0)*2)
+                     + get_local_id(0);
+    unsigned int gridSize = WG_SIZE * get_num_groups(0);
+    l_data[tid] = 0;
+    while (i < n) {
+        l_data[tid] += g_idata[i];
+        if (i + WG_SIZE < n)
+            l_data[tid] += g_idata[i+WG_SIZE];
+        i += gridSize; }
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+    if (WG_SIZE >= 256) {
+        if (tid < 128) {
+            l_data[tid] += l_data[tid+128]; }
+        barrier(CLK_LOCAL_MEM_FENCE); }
+    if (WG_SIZE >= 128) {
+        if (tid <  64) {
+            l_data[tid] += l_data[tid+ 64]; }
+        barrier(CLK_LOCAL_MEM_FENCE); }
+    if (tid < 32) {
+        if (WG_SIZE >= 64) {
+            l_data[tid] += l_data[tid+32]; }
+        if (WG_SIZE >= 32) {
+            l_data[tid] += l_data[tid+16]; }
+        if (WG_SIZE >= 16) {
+            l_data[tid] += l_data[tid+ 8]; }
+        if (WG_SIZE >=  8) {
+            l_data[tid] += l_data[tid+ 4]; }
+        if (WG_SIZE >=  4) {
+            l_data[tid] += l_data[tid+ 2]; }
+        if (WG_SIZE >=  2) {
+            l_data[tid] += l_data[tid+ 1]; }
+    }
+    if (tid == 0)
+        g_odata[get_group_id(0)] = l_data[0];
+}
+
+</code></pre>
+        </div></foreignObject>
+    </g>
+</svg>
 
 ---
-# 1. Algorithmic Primitives .smaller[(a.k.a. algorithmic skeletons)]
+# .smaller[①] Algorithmic Primitives .smaller[(a.k.a. algorithmic skeletons)]
 
 - `\( map~f~[x_1, \ldots, x_n] = [f~x_1, \ldots, f~x_n] \)`
 
@@ -658,10 +705,9 @@ class: split-50
 - `\( reorder~\sigma~[x_1, \ldots, x_n] = [x_{\sigma(1)}, \ldots, x_{\sigma(n)}] \)`
 
 ---
-# 1. High-Level Programs
+# .smaller[①] High-Level Programs
 
-.box-70[
-```haskell
+.box-70[```haskell
        scal = λ a xs . map (λ x . x * a) xs
 
        asum = λ xs . reduce (+) 0 (map abs xs)
@@ -676,8 +722,7 @@ class: split-50
          mm = λ a b .
              map (λ rowA .
                map (λ colB . dotProduct rowA colB ) b ) a
-```
-]
+```]
 
 <!-- .box-70[
 ```haskell
@@ -698,7 +743,7 @@ class: split-50
 ] -->
 
 ---
-# 2. Algorithmic Rewrite Rules
+# .smaller[②] Algorithmic Rewrite Rules
 
 - **Provably correct** rewrite rules
 
@@ -741,6 +786,7 @@ class: split-50
 
 - Reasoning similar to *The Algebra of Programming* by *Richard Bird and Oege De Moor*
 
+<div class="corner-ribbon top-right sticky blue">*</div>
 
 ---
 class: split-70, opencl-table
@@ -749,7 +795,7 @@ class: split-70, opencl-table
     .opencl-table tr > td { padding-top: 20px; }
 </style>
 
-# 2. OpenCL Primitives
+# .smaller[②] OpenCL Primitives
 
 .left-column[
 | **Primitive** | **OpenCL concept** |
@@ -761,12 +807,10 @@ class: split-70, opencl-table
 | `\( mapVec \)`, `\( splitVec \)`, `\( joinVec \)` | Vectorisation |
 ]
 
-.right-column[
-<img src="images/openclthreads.png" width="75%" />
-]
+.right-column[![:img width: 75%](images/openclthreads.png)]
 
 ---
-# 2. OpenCL Rewrite Rules
+# .smaller[②] OpenCL Rewrite Rules
 
 - Express low-level implementation and optimisation choices
 
@@ -785,7 +829,7 @@ class: split-70, opencl-table
 ]
 
 ---
-# 3. Pattern based OpenCL Code Generation
+# .smaller[③] Pattern based OpenCL Code Generation
 
 - Generate OpenCL code for each OpenCL primitive
 
@@ -793,26 +837,22 @@ class: split-70, opencl-table
 .left-column[
 `\( mapGlobal~f~xs \rightarrow \quad \)`
 ]
-.left-column[
-```
+.left-column[```
 for (int g_id  = get_global_id(0); g_id < n;
          g_id += get_global_size(0)) {
     output[g_id] = f(xs[g_id]);
 }
-```
-]
+```]
 
 .left-column[
 `\( reduceSeq~f~xs \rightarrow \quad \)`
 ]
-.left-column[
-```
+.left-column[```
 T acc = z;
 for (int i = 0; i < n; i++) {
     acc = f(acc, xs[i]);
 }
-```
-]
+```]
 <div style="clear:both;"></div>
 
 .left-column[
@@ -823,10 +863,456 @@ for (int i = 0; i < n; i++) {
 
 ]
 
-- A lot more details about the code generation implementation is described in our [[CGO 2017]](http://www.lift-project.org/publications/2017/steuwer17LiftIR.pdf) paper
+- A lot more details about the code generation implementation is described in our [CGO 2017](http://www.lift-project.org/publications/2017/steuwer17LiftIR.pdf) paper
 
 ---
+class: split-50
+# Data Parallel Idealised Algol (DPIA) <br/> .fs-65[as a new foundation for .lift[Lift]'s compilation process]
 
+.left-column[
+- So far .lift[Lift] rewrites only functional expressions
+
+- DPIA combines functional and imperative constructs
+
+- Allows formal translation of functional programs into effient parallel imperative programs
+
+- This translation is _strategy preserving_, i.e., it preserves desissions made while rewriting the purely functional program
+
+- [Draft paper](http://michel.steuwer.info/files/publications/2017/arXiv-2017.pdf)
+]
+
+.right-column[
+![:img width: 100%; margin-top: -50px;](images/DPIAoverview.png)
+]
+
+<div style="clear: both"></div>
+Collaboration with Bob Atkey (Strathclyde) and Sam Lindley (Edinburgh)
+
+<div class="corner-ribbon top-right sticky blue">*</div>
+
+---
+# .lift[Lift] Case Study: Matrix Multiplication
+
+.box-70[![:img width: 50%](images/mm.png)]
+
+<div style="width: 320px; position: absolute; top: 400px; left: 450px;"><pre><code class="haskell">matMult = λ A B .
+  map (λ rowA .
+    map (λ colB .
+      dotProduct rowA colB
+    ) (transpose B)
+  ) A
+</code></pre></div>
+
+
+---
+class: split-60
+# Tiling as a Sequence of Rewrites
+
+.box-80[
+
+.left-column[
+
+.center[Naïve matrix multiplication]
+.box-80[```haskell
+map (λ rowA .
+  map (λ colB .
+    dotProduct rowA colB
+  ) (transpose B)
+) A
+```]
+
+.center[↓ &ensp; Apply tiling rules &ensp; ↓]
+
+.box-80[.fs-80[```haskell
+ `untile . map (λ rowOfTilesA .`
+   `map (λ colOfTilesB .`
+     `toGlobal copy2D .`
+     `reduce (λ tileAcc, (tileA, tileB) .`
+       `map (map (+)) . (zip tileAcc) .`
+       map (λ as .
+         map (λ bs .
+           reduce (+) 0 (map (*) (zip as bs))
+         ) `(toLocal (copy2D tileB)`)
+       ) `(toLocal (copy2D tileA)`)
+     ) `0 (zip rowOfTilesA colOfTilesB)`
+   ) . `tile m k` (transpose B)
+ ) . `tile n k` A
+```]]
+
+]
+
+.right-column[![:img width: 100%](images/tiling.png)]
+
+]
+
+---
+class: split-60
+# Register Blocking as a Sequence of Rewrites
+
+.box-80[
+
+.left-column[
+.box-80[.fs-65[```haskell
+untile . map (λ rowOfTilesA .
+  map (λ colOfTilesB .
+    toGlobal copy2D .
+    reduce (λ tileAcc, (tileA, tileB) .
+      map (map (+)) . (zip tileAcc) .
+      map (λ as .
+        map (λ bs .
+          reduce (+) 0 (map (*) (zip as bs))
+        ) (toLocal (copy2D tileB))
+      ) (toLocal (copy2D tileA))
+    ) 0 (zip rowOfTilesA colOfTilesB)
+  ) . tile m k (transpose B)
+) . tile n k A
+```]]
+
+.center[↓ &ensp; Apply blocking rules &ensp; ↓]
+
+.box-80[.fs-80[```haskell
+ untile . map (λ rowOfTilesA .
+   map (λ colOfTilesB .
+     toGlobal copy2D .
+     reduce (λ tileAcc, (tileA, tileB) .
+       map (map (+)) . (zip tileAcc) .
+       map (λ `aBlocks` .
+         map (λ bs .
+           reduce (+) 0 (
+           `map (λ (aBlock, b) .`
+             `map (λ (a, bp) .`
+               a * bp ) (zip aBlock `(toPrivate b)`)
+           ) (zip `(transpose aBlocks)` bs))
+         ) (toLocal (copy2D tileB))
+       ) (`split l` (toLocal (copy2D tileA)))
+     ) 0 (zip rowOfTilesA colOfTilesB)
+   ) . tile m k (transpose B)
+ ) . tile n k A
+```]]
+
+]
+
+.right-column[![:img width: 100%](images/blocking.png)]
+
+]
+
+---
+# Register Blocking as a Macro Rule
+
+.box-80[
+`\( register~blocking = \)` <br/>
+`\( \quad map~f \rightarrow join \circ map~(map~f) \circ split~k~; \)` <br/>
+`\( \quad map~(λ~a.~map~(λ~b.~(f~a~b))) \rightarrow transpose \circ map~(λ~b.~map~(λ~a.~(f~a~b)))~; \)` <br/>
+`\( \quad map~(f \circ g) \rightarrow map~f \circ map~g~; \)` <br/>
+`\( \quad map~(reduce~f~z) \rightarrow transpose \circ reduce~(λ~(acc, x).~map~f \circ (zip~acc~x))~; \)` <br/>
+`\( \quad map~(map~f) \rightarrow transpose \circ map~(map~f) \circ transpose~; \)` <br/>
+`\( \quad transpose \circ transpose \rightarrow id~; \)` <br/>
+`\( \quad reduceSeq~f~z \circ mapSeq~g \rightarrow reduceSeq~(λ~(acc, x).~(f~acc~(g~x))) ~; \)` <br/>
+`\( \quad map~f \circ map~g \rightarrow map~(f \circ g)~; \)` <br/>
+]
+
+.right[![:img width: 30%; margin-top: -100px;](images/blocking.png)]
+
+---
+class: split-60
+# Exploration Strategy .smaller[for Matrix Multiplication]
+
+
+<div style="width: 230px; position: absolute; top: 125px; left: 150px;"><pre><code class="haskell fs-65">matMult = λ A B .
+  map (λ rowA .
+    map (λ colB .
+      dotProduct rowA colB
+    ) (transpose B)
+  ) A
+</code></pre></div>
+
+<svg>
+  <defs>
+    <marker id="arrow2" markerWidth="10" markerHeight="10" refX="0" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L6,3 z" fill="#555" />
+    </marker>
+  </defs>
+</svg>
+
+<svg class="full-layover" viewBox="0 0 1280 720">
+  <g transform="translate(150, 265)">
+    <line x1="122" y1="0" x2="90" y2="70" stroke="#555" stroke-width="2" marker-end="url(#arrow2)" />
+    <line x1="122" y1="0" x2="122" y2="80" stroke="#555" stroke-width="2" marker-end="url(#arrow2)" />
+    <line x1="122" y1="0" x2="154" y2="70" stroke="#555" stroke-width="2" marker-end="url(#arrow2)" />
+  </g>
+</svg>
+
+<div style="width: 350px; position: absolute; top: 350px; left: 100px;">
+    <img src="images/mmOpenCL.png" width="100%" />
+</div>
+
+<div style="width: 350px; position: absolute; top: 375px; left: 75px;">
+    <img src="images/mmOpenCL.png" width="100%" />
+</div>
+
+<div style="width: 350px; position: absolute; top: 400px; left: 50px;">
+    <img src="images/mmOpenCL.png" width="100%" />
+</div>
+
+<svg>
+  <defs>
+    <g id="one-to-many" transform="translate(0, 50)">
+      <line x1="122" y1="0" x2= "20" y2="21" stroke="#555" stroke-width="2" marker-end="url(#arrow2)" />
+      <line x1="122" y1="0" x2= "60" y2="24" stroke="#555" stroke-width="2" marker-end="url(#arrow2)" />
+      <line x1="122" y1="0" x2="100" y2="27" stroke="#555" stroke-width="2" marker-end="url(#arrow2)" />
+      <line x1="122" y1="0" x2="122" y2="35" stroke="#555" stroke-width="2" marker-end="url(#arrow2)" />
+      <line x1="122" y1="0" x2="144" y2="27" stroke="#555" stroke-width="2" marker-end="url(#arrow2)" />
+      <line x1="122" y1="0" x2="184" y2="24" stroke="#555" stroke-width="2" marker-end="url(#arrow2)" />
+      <line x1="122" y1="0" x2="224" y2="21" stroke="#555" stroke-width="2" marker-end="url(#arrow2)" />
+    </g>
+  </defs>
+</svg>
+
+<svg class="full-layover" viewBox="0 0 1280 720">
+  <g transform="translate(700, 175)">
+
+  <g transform="translate(0, 0)">
+    <rect x="0" y="0" width="245" height="50" rx="10" ry="10" style="fill:white; stroke:black; stroke-width: 2;" />
+    <text x="20" y="30">High-Level Expression</text>
+    <text x="-100" y="30">1</text>
+  </g>
+
+  <use xlink:href="#one-to-many" transform="translate(0, 0)" />
+  <text x="250" y="80">Macro Rules</text>
+
+  <g transform="translate(0, 100)">
+    <rect x="0" y="0" width="245" height="50" rx="10" ry="10" style="fill:white; stroke:black; stroke-width: 2;" />
+    <text x="25" y="30">Rewritten Expression</text>
+    <!-- <text x="-100" y="30">8</text> -->
+  </g>
+
+  </g>
+</svg>
+
+<svg class="full-layover" viewBox="0 0 1280 720">
+  <g transform="translate(700, 175)">
+
+  <use xlink:href="#one-to-many" transform="translate(0, 100)" />
+  <text x="250" y="180">Map to OpenCL</text>
+
+  <g transform="translate(0, 200)">
+    <rect x="0" y="0" width="245" height="50" rx="10" ry="10" style="fill:white; stroke:black; stroke-width: 2;" />
+    <text x="27" y="30">Lowered Expression</text>
+    <!-- <text x="-100" y="30">760</text> -->
+  </g>
+
+  </g>
+</svg>
+
+<svg class="full-layover" viewBox="0 0 1280 720">
+  <g transform="translate(700, 175)">
+
+  <use xlink:href="#one-to-many" transform="translate(0, 200)" />
+  <text x="250" y="280">Parameter Mapping</text>
+
+  <g transform="translate(0, 300)">
+    <rect x="0" y="0" width="245" height="50" rx="10" ry="10" style="fill:white; stroke:black; stroke-width: 2;" />
+    <text x="20" y="30">Specialised Expression</text>
+    <!-- <text x="-100" y="30">46 000</text> -->
+  </g>
+
+  </g>
+</svg>
+
+<svg class="full-layover" viewBox="0 0 1280 720">
+  <g transform="translate(700, 175)">
+
+  <g transform="translate(0, 350)">
+    <line x1="122" y1="0" x2="122" y2="35" stroke="#555" stroke-width="2" marker-end="url(#arrow2)" />
+  </g>
+  <text x="250" y="380">Code Generation</text>
+
+  <g transform="translate(0, 400)">
+    <rect x="0" y="0" width="245" height="50" rx="10" ry="10" style="fill:white; stroke:black; stroke-width: 2;" />
+    <text x="60" y="30">OpenCL Code</text>
+    <!-- <text x="-100" y="30">46 000</text> -->
+    <text x="-100" y="30" style="font-style:italic;">many</text>
+  </g>
+
+  </g>
+
+</svg>
+
+---
+class: split-50
+# Heuristics for Matrix Multiplication
+
+.left-column[
+- **For Macro Rules**:
+    - Nesting depth
+    - Distance of addition and multiplication
+    - Number of times rules are applied
+
+- **For Map to OpenCL**:
+    - Fixed parallelism mapping
+    - Limited choices for mapping to local and global memory
+    - Follow best practice
+]
+.right-column[
+- **For Parameter Mapping**:
+    - Amount of memory used
+        - Global
+        - Local
+        - Registers
+    - Amount of parallelism
+        - Work-items
+        - Workgroups
+]
+
+<div style="clear: both"></div>
+
+.center[_Could we design a language which allows programmers to control the rewriting?_]
+.center[_Is there a connection to automatic theorem proving and proof tactics?_]
+
+<div class="corner-ribbon top-right sticky blue">*</div>
+
+---
+# Exploration in Numbers .smaller[for Matrix Multiplication]
+
+.box-80[![:img width: 100%](images/mmExploration.png)]
+
+---
+# Exploration Space for Matrix Multiplication
+
+.box-70[![:img width: 100%](images/mmSpace.png)]
+
+.center[Only few OpenCL kernel with very good performance ☹️️]
+
+---
+# Exploration Space for Matrix Multiplication
+
+.box-60[![:img width: 100%; margin-top:-30px;](images/mmRandomisedSearch.png)]
+
+.center[Even with a simple random search strategy one can expect to find a good performing kernel quickly 🙂]
+
+---
+# Performance Results Matrix Multiplication
+
+![:img width: 100%; margin-top: 40px; margin-bottom: 60px;](images/mmPerformance.png)
+
+.center[
+Performance close or better than hand-tuned MAGMA library!
+]
+
+---
+# Performance Portability Matrix Multiplication
+
+.box-60[![:img width: 100%; margin-top:-30px;](images/mmPortability.png)]
+
+.center[
+Generated kernels are specialised for device and input size.<br/>
+Truly _portable_ kernel does not exist.
+]
+
+---
+# Desktop GPUs vs. Mobile GPUs
+
+.box-80[![:img width: 100%](images/mmMobile.png)]
+
+.center[
+Performance portable even for mobile GPUs!
+
+.smaller[Much more details our [CASES 2016](http://www.lift-project.org/publications/2016/steuwer16beyondAutoTuning.pdf) paper.]
+]
+
+---
+exclude: true
+class: split-50
+# Applications of .lift[Lift] 1/2
+
+.left-column[
+.center[_Efficient Neural Network Code Generation<br/> for Mobile GPUs_]
+
+.center[![:img width: 60%;](images/nn.png)]
+
+.center[ ↓ .lift[Lift] ↓ ]
+
+.center[![:img width: 30%;](images/smartphone-icon.png)]
+
+]
+
+
+
+.right-column[
+
+.center[_Performance Portable Computer Vision and<br/> Machine Learning_]
+
+.center[ ![:img width: 60%](images/hololense.jpg) ]
+
+]
+
+---
+exclude: true
+# Applications of .lift[Lift] 2/2
+
+![:img width: 500px; position: absolute; padding:8px; border:1px solid #999999; box-shadow: 1px 1px 5px #999;](images/ASPLOS.png)
+
+![:img width: 400px; position: absolute; left: 700px; top: 150px;](images/ConstraintsFlow.png)
+
+<div style="position: absolute; left: 800px; top: 600px;">
+    <a href="http://michel.steuwer.info/publications/2018/ASPLOS/">ASPLOS paper</a>
+</div>
+
+
+---
+# Possible Future Directions
+
+- Can we apply similar ideas to other settings, e.g., distributed systems?
+    - What formalism do we use to rewrite programs in distributed systems?
+    - Can we have rules minimising communication or trade of computation vs. communication?
+
+- Can we build composable hierarchies of code generators reflecting heterogeneous systems?
+
+- How can we reason about the achievable performance?<br/> How do we know a generated program is _good_ or that we can't do better?
+
+- How do we know that our language is expressive enough for an application domain?
+
+- How let we programmers influence the program generation process?
+
+- ...
+
+<div class="corner-ribbon top-right sticky blue">*</div>
+
+---
+<h1 style="position: absolute; top: 225px; left: 490px;" >.lift[Lift] Team</h1>
+
+<div style="text-align: center; font-weight: bold; font-size: 50%; ">
+
+![:team-member Adam Harries, width: 100px; top: 423px; left: 540px;](images/adam.jpg)
+![:team-member Christophe Dubach, width: 100px; top: 377px; left: 412px;](images/cdubach.png)
+![:team-member Bastian Hagedorn, width: 100px; top: 259px; left: 344px;](images/bastian.jpg)
+![:team-member Toomas Remmelg, width: 100px; top: 124px; left: 368px;](images/toomas.jpg)
+![:team-member Larisa Stolzfus, width: 100px; top: 37px; left: 472px;](images/larisa.jpg)
+![:team-member Naums Mogers, width: 100px; top: 37px; left: 608px;](images/naums.jpg)
+![:team-member Michel Steuwer, width: 100px; top: 124px; left: 712px;](images/msteuwer.jpg)
+![:team-member Lu Li, width: 100px; top: 259px; left: 736px;](images/lu.jpg)
+![:team-member Federico Pizzuti, width: 100px; top: 377px; left: 668px;](images/federico.jpg)
+
+</div>
+
+![:img height: 60px; position: absolute; top: 580px; left: 200px;](images/GlasgowLogo.png)
+![:img height: 60px; position: absolute; top: 580px; left: 450px;](images/EdinburghLogo.png)
+![:img height: 75px; position: absolute; top: 565px; left: 750px;](images/WWULogo.png)
+
+---
+# .lift[Lift] is Open-Source Software
+
+<a href="https://github.com/lift-project/lift"><img style="position: absolute; top: 0; right: 0; border: 0;" src="images/fork-me.png" alt="Fork me on GitHub" data-canonical-src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png"></a>
+
+.center[
+[http://www.lift-project.org](http://www.lift-project.org)
+
+[https://github.com/lift-project/lift](https://github.com/lift-project/lift)
+
+![:img width: 80%; margin-top: 50px](images/github.png)
+]
+
+---
 name: closing
 background-image: url(../template/images/Closing16x9.jpg)
 class: title-slide, text-white
@@ -845,6 +1331,28 @@ count: false
     <script src="../template/MathJax/MathJax.js?config=TeX-AMS_HTML&delayStartupUntil=configured" type="text/javascript"></script>
 
     <script>
+      // macros
+      remark.macros['img'] = function (style) {
+        return '<img src="' + this + '" style="' + style + '" />';
+      };
+
+      remark.macros['team-member'] = function (name, style) {
+          return '<div style="position: absolute; ' + style + '"><img src="' + this + '" style="border-radius: 50%;" width="100%" />' + name + '</div>';
+      }
+    </script>
+
+<!-- <div style="width: 230px; position: absolute; top: 125px; left: 150px;"><pre><code class="haskell fs-65">matMult = λ A B . -->
+
+    <script>
+      var renderMath = function() {
+        renderMathInElement(document.body, {delimiters: [
+            {left: "$$", right: "$$", display: true},
+            {left: "$", right: "$", display: false},
+            {left: "\\[", right: "\\]", display: true},
+            {left: "\\(", right: "\\)", display: false},
+        ]});
+      }
+
       var slideshow = remark.create({
           ratio: '16:9',
           highlightLanguage: 'c',
@@ -854,12 +1362,7 @@ count: false
           });
 
       // Setup MathJax
-      MathJax.Hub.Config({
-          tex2jax: {
-          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre']
-          }
-      });
-
+      MathJax.Hub.Config({ tex2jax: { skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'] } });
       MathJax.Hub.Configured();
     </script>
   </body>
