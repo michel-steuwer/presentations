@@ -31,7 +31,7 @@ count: false
     - Email: [michel.steuwer@glasgow.ac.uk](mailto:michel.steuwer@glasgow.ac.uk)
 
 <div style="width: 150px; position: absolute; top: 150px; left: 800px">
-    <img style="vertical-align:middle; clip-path: circle(60px at center);" src="images/msteuwer.jpg" width="80%"/>
+    <img style="vertical-align:middle; clip-path: circle(60px at center);" alt="Picture of Michel Steuwer" src="images/msteuwer.jpg" width="80%"/>
 </div>
 
 - Lab assistants:
@@ -115,18 +115,141 @@ count: false
 ---
 # What languages do you speak?
 
-- Many different programming languages for many different domains
+- Answer at: http://bit.do/GlasgowSP_Languages
 
-- 
+<iframe src="https://docs.google.com/forms/d/e/1FAIpQLScjEcPIzCataqAvJcLOHajnaD34WSwH__iyJu-CAWk2ydOZ_Q/viewform?embedded=true" width="1000" height="425" frameborder="0" marginheight="0" marginwidth="0">Loading...</iframe>
 
 ---
 # What is *Systems Programming*?
 
----
-# History of Systems Programming Languages
 
 ---
-# A quiz of Python vs. C
+# History of Systems Programming Languages - 1
+
+
+**until the 1970s**: System software is written in processor specific assembly languages
+
+**1970s**: _Dennis Ritchie_ and _Ken Thompson_ wanted to port UNIX from the `PDP-7` to the `PDP-11`
+.center[
+They looked for a portable programming language and tried a language called `B` but then<br/>
+invented `C` as an _imperative_ language supporting _structured_ programming
+]
+
+<div style="text-align: center">
+    <div style="width: 45%; float: left;">
+        <img src="images/PDP-7.jpeg" width="70%"/><br/>
+        <span style="font-size: 90%">PDP-7 minicomputer</span>
+    </div>
+    <div style="width: 45%; float: left;">
+        <img src="images/Ken_Thompson_(sitting)_and_Dennis_Ritchie_at_PDP-11.jpg" width="70%"/><br/>
+        <span style="font-size: 90%">Ken  Thompson (sitting) and Dennis Ritchie (standing) at a PDP-11 minicomputer
+            <span style="font-size: 60%">(Picture by <a hre="https://en.wikipedia.org/wiki/File:Ken_Thompson_(sitting)_and_Dennis_Ritchie_at_PDP-11_(2876612463).jpg">Peter Hamer</a>)</span>
+        </span>
+    </div>
+    <div style="clear: both;"></div>
+</div>
+
+
+---
+# History of Systems Programming Languages - 2
+
+
+**1980s**: _Bjarne Stroustrup_ aims to enrich `C` with new abstraction mechanisms and creates `C++` <br/>
+
+A major influence is the first _object-oriented_ programming language `Simula`
+
+<div style="text-align: center">
+    <img src="images/BjarneStroustrup.jpg" width="30%"/><br/>
+    <span style="font-size: 90%">Bjarne Stroustrup, the creator of C++</span>
+</div>
+
+**2010s**: New systems programming languages appear. `Rust` (2010) and `Swift` (2014) are sucessfull examples which include many _functional_ programming language features
+
+---
+# Programming Paradigms
+
+- In _imperative_ programming computations are sequences of statements that change the program's state
+
+```python
+x = 41
+x = x + 1
+```
+
+- _Structured_ programming organises programs with subroutines and structured control flow constructes
+
+```python
+sum = 0
+for x in array:
+    sum += x
+```
+
+- _Object-oriented_ programming organises programs into objects which contain data and encapsulate behaviour
+
+```python
+animal = Dog()
+animal.makeNoice()
+```
+
+- In _functional_ programming programs are mathematical functions and avoid explicit change of state
+
+```python
+fib = lambda x, x_1=1, x_2=0: x_2 if x == 0 else fib(x-1, x_1 + x_2, x_1)
+```
+
+---
+# Some questions about a simple Python program
+
+```python
+x = 41
+x = x + 1
+```
+
+- What value does `x` has at the end of the program execution? (not a tricky question)
+
+--
+    - Answer: `42`
+
+- How much memory does Python take to store `x`? (much more tricky question)
+
+--
+
+    - Answer: In depends on the Pythton implementation.<br/>
+        `sys.getsizeof(x)` gives the answer. On my machine: 24 bytes (= 24 * 8 = 192 bits)<br/>
+        We can see the defining C code [here](https://github.com/python/cpython/blob/master/Include/longintrepr.h#L70)
+
+- How many instructions does Python execute to compute `x + 1`? (even more tricky question)
+
+--
+
+    - Answer: I don't know, but many more than just the addition ...<br/>
+        Python is a dynamically typed language, so the data type of `x` could change at any time.<br/>
+        Every operation, therefore, tests the data types of the operants to check which instruction to execute
+
+---
+# Some questions about a simple C program
+
+```C
+#include <stdio.h>
+int main() {
+    int x = 41;
+    x = x + 1;
+    println("%d\n", x);
+}
+```
+
+- What value does x has at the end of the program execution? (not a tricky question)
+
+    - Answer: 42
+
+- How much memory does C take to store `x`? (not that tricky any more)
+
+    - Answer: `sizeof(int)` usually 4 bytes (= 4 * 8 = 32 bits)
+
+- How many instructions does C take to compute `x + 1`? (not that tricky any more)
+
+    - Answer: 1 `add` instruction
+
+.center[This level of control allows strong reasoning about the programs performance and execution behaviour]
 
 ---
 name: closing
