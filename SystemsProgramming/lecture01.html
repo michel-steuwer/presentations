@@ -34,13 +34,9 @@ count: false
     <img style="vertical-align:middle; clip-path: circle(60px at center);" alt="Picture of Michel Steuwer" src="images/msteuwer.jpg" width="80%"/>
 </div>
 
-- Lab assistants:
-    - Person 1
-    - Person 2
-
 - Schedule:
-    - Two-hour lecture each week: **Monday 10 - 12**
-    - Labs: **Monday**
+    - Two-hour lecture each week: **Monday 10 - 12**, Adam Smith Building 1115
+    - Labs: **Monday 14 - 17**,  Boyd Orr 720
 
 ---
 # Learning outcomes - Systems Programming (H)
@@ -48,7 +44,6 @@ count: false
 1. Demonstrate competence in **low-level systems programming**
 
 1. **Design, implement and explain the behaviour** of low-level programs written in a systems language
-
 1. Explain the concepts of **stack and heap allocation**, **pointers**, and **memory ownership**, including demonstrating an understanding of issues such as **memory leaks**, **buffer overflows**, **use-after-free**, and **race conditions**
 
 1. Explain how **data structures are represented**, and how this interacts with caching and virtual memory, and to be able to demonstrate the performance impact of such issues
@@ -58,6 +53,46 @@ count: false
 1. **Build** well-structured **concurrent systems programs** of moderate size, using libraries and static analysis tools appropriately.
 
 - In this course we will use `C` and `C++` as they are the two most important systems programming languages
+
+---
+# Course Overview and (preliminary) Schedule
+
+| Date  | Lecture |
+|-------|---------|
+|**24/09** &nbsp;  | Introduction; **No Labs** |
+|**01/10** | Fundamentals of C and the importance of Types | 
+|**08/10** | Memory and Pointers |
+|**15/10** | Resource Management and Ownership |
+|**22/10** | Debugging and Development Tools |
+|**29/10** | Programming week (**no lecture, but labs**): time to work on your coursework
+|**02/11** | **Deadline Coursework 1**
+|**05/11** | Introduction to threads and concurrency |
+|**12/11** | PThreads, thread-safe abstract data type |
+|**19/11** | Advanced threading
+|**26/11** | Guest Lecture
+|**30/11** | **Deadline Coursework 2**
+
+- **Revision Lecture in Semester 2**; **Exam in April/May**
+
+---
+# Coursework and Labs
+
+- There will be two pieces of coursework each worth 10% of your mark
+
+- First coursework will be released next week with a deadline on the 2nd November
+
+- Second coursework will be released at the end of October with a deadline on the 30th November
+
+- The exam in April / May is 80% of your mark
+
+- Lab times:
+    - Student surnames starting with **A-G:  14:00 - 15:00**
+    - Student surnames starting with **H-Mi: 15:00 - 16:00**
+    - Student surnames starting with **Mo-Z: 16:00 - 17:00**
+
+- There is a Lab exercise each week for improving your C programming skills
+
+- You can also work on your coursework during the Lab and ask questions
 
 ---
 # Reading material
@@ -87,52 +122,109 @@ count: false
     <div style="clear: both;"></div>
 </div>
 
+- For basic and syntactic questions use the free [`C Programming` Wikibook](https://en.wikibooks.org/wiki/C_Programming) and [`cppreference.com`](https://en.cppreference.com/w/)
+
 ---
 # Course methodology
 
 - This course is new, replacing the prior _Advanced Programming_ course
 
-- I not only want to change the content, but also _how_ the course is delivered
+- I do not only want to change the content, but also _how_ the course is delivered
 
 - I find teaching programming without actively programming silly!
 
 - Emphasis on **_live coding_** in the lectures instead of reading slides
 
-- This is much better with plenty of student interactions, so **ask questions!**<br/>
-  We will find the answer together by trying it out and writing programs
+<div style="text-align: center">
+    <img src="images/typing.gif" width="30%"/>
+</div>
+
+- This is much better with student interactions, so **ask questions!**<br/>
+  We will find the answer together by trying it out and write programs
+
 
 ---
 # Your Feedback and Questions
 
 - Your feedback is important! It will change the material of the course and the way it is delivered
 
-- You can use [![:img height: 40px; vertical-align: middle](images/Padlet.png)Padlet](https://padlet.com/michel_steuwer/questions) to post questions during the lecture
+- Use [![:img height: 40px; vertical-align: middle](images/Padlet.png)Padlet](https://padlet.com/michel_steuwer/questions) to post questions during the lecture
 
-- Use the forum on the course ![:img height: 30px; vertical-align: bottom](images/moodle-logo.png) page to ask questions inbetween lectures
+- Use the forum on the course ![:img height: 25px; vertical-align: bottom](images/moodle-logo.png) page to ask questions after lectures or regarding the coursework
 
-- Email me _only_ with personal matters
-
----
-# What languages do you speak?
-
-- Answer at: http://bit.do/GlasgowSP_Languages
-
-<iframe src="https://docs.google.com/forms/d/e/1FAIpQLScjEcPIzCataqAvJcLOHajnaD34WSwH__iyJu-CAWk2ydOZ_Q/viewform?embedded=true" width="1000" height="425" frameborder="0" marginheight="0" marginwidth="0">Loading...</iframe>
+- Email me _only_ with questions regarding personal matters
 
 ---
-# What is *Systems Programming*?
+# What languages do you speak? <br/> Experience and Expectations
 
+- Please answer at: http://bit.do/GlasgowSP_Languages
+
+<iframe src="https://docs.google.com/forms/d/e/1FAIpQLScjEcPIzCataqAvJcLOHajnaD34WSwH__iyJu-CAWk2ydOZ_Q/viewform?embedded=true" width="1000" height="350" frameborder="0" marginheight="0" marginwidth="0">Loading...</iframe>
 
 ---
+# *Systems Programming* and *System Software*?
+
+- *Systems programming* is the activity of writing computer *system software*
+
+- In contrast we call other software *application software*
+
+- Examples of system software:<br/> operating system, web browser, video games, scientific computing applications and libraries, ...
+
+- System software has (often) particular performance constrains such as:<br/> fast execution time, low memory consumption, low energy usage, ...
+
+- To achieve these performance constrains systems programming languages allow for a more fine grained **control** over the execution of programs
+
+---
+# Teaching of fundamentals not a Language
+
+- You will learn C and a bit of C++ as part of this course, but this is not the main goal
+
+- I want to you to deepen your understanding of fundamental *principles* and *techniques* in *computer systems*
+
+    - **Memory** and **Computation** as fundamental resources of computing
+
+    - **Representation of data structures** in memory and the role of **data types**
+
+    - **Techniques for management** of computational resources
+
+    - Reasoning about **concurrent** systems
+
+<div style="height: 50px"></div>
+
+.center[Understanding these principles and techniques well will make you a better computer scientist<br/> no matter what area your are interested in]
+
+---
+class: split-60
 # History of Systems Programming Languages - 1
 
+.left-column[
+**1950s**:
+
+Software wasn't distinguished between system and application
+
+A single application always used the entire machine
+
+Early programming languages were invented such as<br/> Fortran, LISP and COBOL
+
+*Grace Hopper* wrote one of the first *compilers* to automatically turn the human readable program into machine code
+]
+
+.right-column[
+.center[
+![:img width: 90%](images/Grace_Hopper_and_UNIVAC.jpg)
+Grace Hopper at the UNIVAC I
+]
+]
+
+---
+# History of Systems Programming Languages - 2
 
 **until the 1970s**: System software is written in processor specific assembly languages
 
 **1970s**: _Dennis Ritchie_ and _Ken Thompson_ wanted to port UNIX from the `PDP-7` to the `PDP-11`
 .center[
 They looked for a portable programming language and tried a language called `B` but then<br/>
-invented `C` as an _imperative_ language supporting _structured_ programming
+invented `C` as a portable _imperative_ language supporting _structured_ programming
 ]
 
 <div style="text-align: center">
@@ -151,7 +243,7 @@ invented `C` as an _imperative_ language supporting _structured_ programming
 
 
 ---
-# History of Systems Programming Languages - 2
+# History of Systems Programming Languages - 3
 
 
 **1980s**: _Bjarne Stroustrup_ aims to enrich `C` with new abstraction mechanisms and creates `C++` <br/>
@@ -183,7 +275,7 @@ for x in array:
     sum += x
 ```
 
-- _Object-oriented_ programming organises programs into objects which contain data and encapsulate behaviour
+- _Object-oriented_ programming organises programs into objects containing data and encapsulate behaviour
 
 ```python
 animal = Dog()
@@ -204,7 +296,7 @@ x = 41
 x = x + 1
 ```
 
-- What value does `x` has at the end of the program execution? (not a tricky question)
+- What value does `x` hold at the end of the program execution? (not a tricky question)
 
 --
     - Answer: `42`
@@ -214,7 +306,7 @@ x = x + 1
 --
 
     - Answer: In depends on the Pythton implementation.<br/>
-        `sys.getsizeof(x)` gives the answer. On my machine: 24 bytes (= 24 * 8 = 192 bits)<br/>
+        `sys.getsizeof(x)` gives the answer. On my machine: 28 bytes (= 28 * 8 = 224 bits)<br/>
         We can see the defining C code [here](https://github.com/python/cpython/blob/master/Include/longintrepr.h#L70)
 
 - How many instructions does Python execute to compute `x + 1`? (even more tricky question)
@@ -223,7 +315,8 @@ x = x + 1
 
     - Answer: I don't know, but many more than just the addition ...<br/>
         Python is a dynamically typed language, so the data type of `x` could change at any time.<br/>
-        Every operation, therefore, tests the data types of the operants to check which instruction to execute
+        Every operation tests the data types of the operants to check which instruction to execute.<br/>
+        The C implementation for the `add` operation starts [here](https://github.com/python/cpython/blob/b57b4ac042b977e0b42a2f5ddb30ca7edffacfa9/Objects/abstract.c#L952)
 
 ---
 # Some questions about a simple C program
@@ -233,9 +326,14 @@ x = x + 1
 int main() {
     int x = 41;
     x = x + 1;
-    println("%d\n", x);
+    printf("%d\n", x);
 }
 ```
+<div style="position: relative; top: -50px; left: 800px; margin-bottom: -50px">
+.smaller[[Online version of the code](https://godbolt.org/z/vq6uMq)]
+</div>
+
+--
 
 - What value does x has at the end of the program execution? (not a tricky question)
 
@@ -247,9 +345,354 @@ int main() {
 
 - How many instructions does C take to compute `x + 1`? (not that tricky any more)
 
-    - Answer: 1 `add` instruction
+    - Answer: 1 `add` instruction and 2 memory (`mov`) instructions
 
-.center[This level of control allows strong reasoning about the programs performance and execution behaviour]
+.center[**This level of control allows strong reasoning about the programs performance and execution behaviour**]
+
+---
+class: split-45-45
+# `C` by example: Fibonacci
+
+.left-column[
+Fibonacci recursively:
+```
+int fib(int x, int x1, int x2) {
+    if (x == 0) {
+        return x2;
+    } else {
+        return fib(x - 1, x1 + x2, x1);
+    }
+}
+
+
+
+
+
+
+
+int main() {
+    int fib_6 = fib(6, 0, 1);
+}
+```
+]
+
+.right-column[
+Fibonacci iteratively:
+```
+int fib(int x) {
+  int x1 = 0;
+  int x2 = 1;
+
+  while (x > 1) {
+    int xtmp = x1 + x2;
+    x1 = x2;
+    x2 = xtmp;
+    x = x - 1;
+  }
+  return x2;
+}
+
+int main() {
+    int fib_6 = fib(6);
+}
+```
+]
+
+---
+# Compiling a C program
+
+- To execute a C program we must first *compile* it into machine executable code
+
+- `Java, Haskell` (and many other languages) are also compiled languages
+
+- The *compiler* translates the C source code in multiple steps into machine executable code:
+
+    1. The *preprocessor* expands macros (e.g. `#include <stdio.h>` or `#define PI 3.14`)
+
+    2. In the compiler stage, the source code is a) *parsed* and turned into an *intermediate representation*, b) machine-specific *assembly* code is generated, and, finally, c) *machine code* is generated in an *object file*
+
+    3. The *linker* combines multiple object files into an executable
+
+- In this course we are using the `clang` compiler.
+
+  To compile and then execute a C program run:
+
+```
+clang source.c -o program
+./program
+```
+
+---
+class: split-35-60
+# 1. Preprocessing
+
+.left-column[
+Input program as C source code
+```
+#include <stdio.h>
+
+int main() {
+  int x = 41;
+  x = x + 1;
+  printf("%d \n", x);
+}
+```
+]
+
+.right-column[
+Program after preprocessing
+```
+typedef signed char __int8_t;
+typedef unsigned char __uint8_t;
+// ...
+int printf(const char * restrict, ...);
+// ...
+
+int main() {
+  int x = 41;
+  x = x + 1;
+  printf("%d \n", x);
+}
+```
+]
+
+<div style="clear: both;"></div>
+
+You can generate the code after the preprocessor stage with the `-E` flag:
+```
+clang source.c -E -o source.e
+```
+
+---
+class: split-35-60
+# 2a. Compiler intermediate representation
+
+.left-column[
+Program after preprocessing
+.smaller[
+```
+typedef signed char __int8_t;
+typedef unsigned char __uint8_t;
+// ...
+int printf(const char * restrict, ...);
+// ...
+
+int main() {
+  int x = 41;
+  x = x + 1;
+  printf("%d \n", x);
+}
+```
+]
+
+You can generate the intermediate representation with the .smaller[`-emit-llvm -S`] flags:
+.fs-80[
+```
+clang source.c -emit-llvm -S -o source.llvm 
+```
+]]
+
+.right-column[
+Program in compiler intermediate representation
+.smaller[
+```
+; ModuleID = 'source.c'
+source_filename = "source.c"
+target datalayout = "e-m:o-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-apple-macosx10.13.0"
+
+@.str = private unnamed_addr constant [5 x i8] c"%d \0A\00", align 1
+
+; Function Attrs: noinline nounwind optnone ssp uwtable
+define i32 @main() #0 {
+  %1 = alloca i32, align 4
+  store i32 41, i32* %1, align 4
+  %2 = load i32, i32* %1, align 4
+  %3 = add nsw i32 %2, 1
+  store i32 %3, i32* %1, align 4
+  %4 = load i32, i32* %1, align 4
+  %5 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str, i32 0, i32 0), i32 %4)
+  ret i32 0
+}
+
+declare i32 @printf(i8*, ...) #1
+
+attributes #0 = { noinline nounwind optnone ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="true" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="penryn" "target-features"="+cx16,+fxsr,+mmx,+sahf,+sse,+sse2,+sse3,+sse4.1,+ssse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #1 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="true" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="penryn" "target-features"="+cx16,+fxsr,+mmx,+sahf,+sse,+sse2,+sse3,+sse4.1,+ssse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+
+!llvm.module.flags = !{!0, !1}
+!llvm.ident = !{!2}
+
+!0 = !{i32 1, !"wchar_size", i32 4}
+!1 = !{i32 7, !"PIC Level", i32 2}
+!2 = !{!"Apple LLVM version 10.0.0 (clang-1000.11.45.2)"}
+```
+]]
+
+---
+class: split-45-50
+# 2b. Assembly code
+
+.left-column[
+.smaller[
+Program in compiler intermediate representation
+```
+; ModuleID = 'source.c'
+source_filename = "source.c"
+target datalayout = "e-m:o-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-apple-macosx10.13.0"
+
+@.str = private unnamed_addr constant [5 x i8] c"%d \0A\00", align 1
+
+; Function Attrs: noinline nounwind optnone ssp uwtable
+define i32 @main() #0 {
+  %1 = alloca i32, align 4
+  store i32 41, i32* %1, align 4
+  %2 = load i32, i32* %1, align 4
+  %3 = add nsw i32 %2, 1
+  store i32 %3, i32* %1, align 4
+  %4 = load i32, i32* %1, align 4
+  %5 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str, i32 0, i32 0), i32 %4)
+  ret i32 0
+}
+
+...
+```
+]
+
+.fs-90[
+You can generate the assembly code with the `-S` flag:
+```
+clang source.c -S -o source.s
+```
+]]
+
+.right-column[
+.smaller[
+Program in machine-specific assembly code (here for x86-64)
+```
+	.section	__TEXT,__text,regular,pure_instructions
+	.macosx_version_min 10, 13
+	.globl	_main                   ## -- Begin function main
+	.p2align	4, 0x90
+_main:                                  ## @main
+	.cfi_startproc
+## %bb.0:
+	pushq	%rbp
+	.cfi_def_cfa_offset 16
+	.cfi_offset %rbp, -16
+	movq	%rsp, %rbp
+	.cfi_def_cfa_register %rbp
+	subq	$16, %rsp
+	leaq	L_.str(%rip), %rdi
+	movl	$41, -4(%rbp)
+	movl	-4(%rbp), %eax
+	addl	$1, %eax
+	movl	%eax, -4(%rbp)
+	movl	-4(%rbp), %esi
+	movb	$0, %al
+	callq	_printf
+	xorl	%esi, %esi
+	movl	%eax, -8(%rbp)          ## 4-byte Spill
+	movl	%esi, %eax
+	addq	$16, %rsp
+	popq	%rbp
+	retq
+	.cfi_endproc                    ## -- End function
+	.section	__TEXT,__cstring,cstring_literals
+L_.str:                                 ## @.str
+	.asciz	"%d \n"
+.subsections_via_symbols
+```
+]]
+
+---
+class: split-45-50
+# 2c. Machine code
+
+.left-column[
+.smaller[
+Program in machine-specific assembly code (here for x86-64)
+```
+	.section	__TEXT,__text,regular,pure_instructions
+	.macosx_version_min 10, 13
+	.globl	_main                   ## -- Begin function main
+	.p2align	4, 0x90
+_main:                                  ## @main
+	.cfi_startproc
+## %bb.0:
+	pushq	%rbp
+	.cfi_def_cfa_offset 16
+	.cfi_offset %rbp, -16
+	movq	%rsp, %rbp
+	.cfi_def_cfa_register %rbp
+	subq	$16, %rsp
+	leaq	L_.str(%rip), %rdi
+	movl	$41, -4(%rbp)
+	movl	-4(%rbp), %eax
+	addl	$1, %eax
+	movl	%eax, -4(%rbp)
+	movl	-4(%rbp), %esi
+	movb	$0, %al
+	callq	_printf
+	xorl	%esi, %esi
+	movl	%eax, -8(%rbp)          ## 4-byte Spill
+	movl	%esi, %eax
+	addq	$16, %rsp
+	popq	%rbp
+	retq
+	.cfi_endproc                    ## -- End function
+	.section	__TEXT,__cstring,cstring_literals
+L_.str:                                 ## @.str
+	.asciz	"%d \n"
+.subsections_via_symbols
+```
+]]
+
+.right-column[
+.smaller[Program in machine (or *object*) code (here for x86-64)]
+![:img width: 75%](images/source.hex.png)
+
+.fs-80[
+You can generate an object file with machine code using the `-c` flag:
+```
+clang source.c -c -o source.o
+```
+]
+]
+
+---
+class: split-70
+# Linking
+
+.left-column[
+- The linker combines one or more object files into a single executable
+
+- The linker checks that all functions called in the program have machine code avaialble (e.g. `printf`'s machine code is in the C standard library) 
+
+- If the machine code for a function can not be found the linker complains:
+```
+Undefined symbols for architecture x86_64:
+  "_foo", referenced from:
+      _main in source.o
+ld: symbol(s) not found for architecture x86_64
+clang: error: linker command failed with exit code 1
+       (use -v to see invocation)
+```
+]
+
+.right-column[
+![:img widht:90%](images/Linker.png)
+]
+
+---
+# Next week: Basics of `C`
+
+- Basics of C: variables, `struct`s, control flow, functions
+
+- What are `data types`, why are they important, and what do they tell us about memory?
+
+- If you know `C` already well you might skip the lecture next week, but do come to the Lab!
 
 ---
 name: closing

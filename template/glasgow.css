@@ -145,6 +145,15 @@ a {
 .split-70 .left-column {width: 70%}
 .split-70 .right-column {width: 30%}
 
+.split-35-55 .left-column {width: 35%}
+.split-35-55 .right-column {width: 55%}
+.split-35-60 .left-column {width: 35%}
+.split-35-60 .right-column {width: 60%}
+.split-45-50 .left-column {width: 45%}
+.split-45-50 .right-column {width: 50%}
+.split-45-45 .left-column {width: 45%}
+.split-45-45 .right-column {width: 45%}
+
 .box-20 { width: 20%; margin: 0 auto; display: block; }
 .box-30 { width: 30%; margin: 0 auto; display: block; }
 .box-40 { width: 40%; margin: 0 auto; display: block; }
