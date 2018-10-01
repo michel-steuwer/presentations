@@ -117,6 +117,7 @@ a {
 .fs-85 { font-size: 85%; }
 .fs-90 { font-size: 90%; }
 .fs-95 { font-size: 95%; }
+.fs-150 { font-size: 150%; }
 
 .fs-50 .remark-code { font-size: 50%; }
 .fs-55 .remark-code { font-size: 55%; }
@@ -153,6 +154,8 @@ a {
 .split-45-50 .right-column {width: 50%}
 .split-45-45 .left-column {width: 45%}
 .split-45-45 .right-column {width: 45%}
+.split-50-45 .left-column {width: 50%}
+.split-50-45 .right-column {width: 45%}
 
 .box-20 { width: 20%; margin: 0 auto; display: block; }
 .box-30 { width: 30%; margin: 0 auto; display: block; }
@@ -162,6 +165,8 @@ a {
 .box-70 { width: 70%; margin: 0 auto; display: block; }
 .box-80 { width: 80%; margin: 0 auto; display: block; }
 .box-90 { width: 90%; margin: 0 auto; display: block; }
+
+.boxed { display: inline-block; background: rgb(253, 246, 227); }
 
 .full-layover {
   position: absolute;
