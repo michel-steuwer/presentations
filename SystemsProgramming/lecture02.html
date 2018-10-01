@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Systems Programming</title>
+    <meta charset="utf-8">
+    <style>
+      @import url(../template/lift.css);
+      @import url(../template/glasgow.css);
+      @import url(../template/print.css);
+    </style>
+  </head>
+  <body>
+    <textarea id="source">
+
+name: title
+background-image: url(../template/images/Title16x9.jpg)
+class: title-slide
+count: false
+
+# Systems Programming
+## Lecture 2  .smaller[| 1.smaller[st] of October 2018]
+
+### Michel Steuwer .smaller[| [http://michel.steuwer.info](http://michel.steuwer.info/) | [michel.steuwer@glasgow.ac.uk](mailto:michel.steuwer@glasgow.ac.uk)]
+
+<!-- https://denysdovhan.com/spaceship-prompt/ -->
+
+---
+# Overview - Introduction to `C` and Data Types
+
+- Today we are going to discuss fundamental features of `C`
+
+- We will focus on differences to `Java` and `Python` and not discuss every syntactic construct in `C`
+
+- A particular focus lies on the role *data types* play in assisting us to write *meaningful programs*
+
+- We will discuss important fundamental concepts such as:<br/>
+    *lexical scope* and *lifetime* of variables, *call-by-value*, or the difference between *declarations* and *definitions*
+
+- We will also discuss the meaning and importance of compiler warnings and errors
+
+- We will explore all of this by writing example `C` programs
+
+
+---
+class: split-45-45
+# `Java` vs `C`
+
+- We start by looking at some `Java` and equivalent `C` programs
+
+- These are taken from [rosettacode.org](rosettacode.org) which collects programs in many different languages
+
+1. Computation of the Dot Product: `\( z = \sum_{i = 0}^{n} x_i \cdot y_i \)`
+
+--
+
+.left-column[
+```Java
+public class DotProduct {
+  public static void main(String[] args) {
+    double[] x = { 1,  3, -5};
+    double[] y = { 4, -2, -1};
+
+    double z = 0;
+    for (int i = 0; i < 3; i++) {
+      z += x[i] * y[i];
+    }
+    System.out.println(z);
+  }
+}
+```
+]
+
+.right-column[
+```C
+#include <stdio.h>
+int main() {
+    double x[] = { 1,  3, -5};
+    double y[] = { 4, -2, -1};
+
+    double z = 0;
+    for (int i = 0; i < 3; i++) {
+        z += x[i] * y[i];
+    }
+    printf("%f\n", z);
+}
+```
+]
+
+
+---
+class: split-45-45
+# 2. Calculation of the value of `\(e\)`
+
+- The number `\(e\)` is defined as the infinite series: `\(e = \sum_{n = 0}^{\infty} \frac{1}{n!} =
+    \frac{1}{1} + \frac{1}{1} + \frac{1}{1\cdot 2} + \frac{1}{1\cdot 2\cdot 3} + \ldots  \)`
+
+--
+
+.left-column[
+```Java
+public class CalculateE {
+  public static final double EPSILON
+    = 1.0e-15;
+ 
+  public static void main(String[] args) {
+    long fact = 1;
+    double e = 2.0;
+    int n = 2;
+    double e0;
+    do {
+      e0 = e;
+      fact *= n++;
+      e += 1.0 / fact;
+    } while (Math.abs(e - e0) >= EPSILON);
+    System.out.printf("e = %.15f\n", e);
+  }
+}
+```
+]
+
+.right-column[
+```C
+#include <stdio.h>
+#include <math.h>
+    
+#define EPSILON 1.0e-15
+    
+int main() {
+  long fact = 1;
+  double e = 2.0;
+  int n = 2;
+  double e0;
+  do {
+    e0 = e;
+    fact *= n++;
+    e += 1.0 / fact;
+  } while (fabs(e - e0) >= EPSILON);
+  printf("e = %.15f\n", e);
+}
+```
+]
+
+
+---
+class: split-50-45
+# 3. Guess the number
+
+- The program picks a random number and let the user guess it
+
+--
+
+.left-column[
+.fs-90[
+```Java
+import java.util.Random; import java.util.Scanner;
+public class Guess {
+  public static void main(String[] args) {
+    Scanner scan = new Scanner(System.in);
+    Random random = new Random();
+    int randomNumber = random.nextInt(10 + 1);
+    int guessedNumber = 0;
+ 
+    do {
+      System.out.print("Guess what the number is: ");
+      guessedNumber = scan.nextInt();
+      if (guessedNumber > randomNumber)
+        System.out.println("Your guess is too high!");
+      else if (guessedNumber < randomNumber)
+        System.out.println("Your guess is too low!");
+      else
+        System.out.println("You got it!");
+    } while (guessedNumber != randomNumber);
+  }
+}
+```
+]]
+
+.right-column[
+.fs-90[
+```C
+#include <stdlib.h>
+#include <stdio.h>
+#include <time.h>
+    
+int main(){
+  int number, guess;
+  srand( time( 0 ) );
+  number = rand() % (10 + 1);
+    
+  while( scanf( "%d", &guess ) == 1 ) {
+    printf( "Guess what the number is: " );
+    if( number == guess ){
+      printf( "You got it!\n" );
+      break;
+    }
+    printf( "Your guess was too %s.\n",
+        number < guess ? "high" : "low" );
+  }
+}
+```
+]
+]
+
+
+---
+class: split-50-45
+# 4. Matrix Transposition
+
+- Transpose a matrix, that is flip it over its diagonal
+
+--
+
+.left-column[
+.fs-90[
+```Java
+import java.util.Arrays;
+public class Transpose {
+  public static void main(String[] args){
+    int[][] m = { {1,  1,   1,   1},
+                  {2,  4,   8,  16},
+                  {3,  9,  27,  81},
+                  {4, 16,  64, 256},
+                  {5, 25, 125, 625} };
+    int[][] ans = new int[4][5];
+    for(int row = 0; row < m.length; row++)
+      for(int col = 0; col < m[0].length; col++)
+        ans[cols][rows] = m[rows][cols];
+
+    for(int[] row : ans) {
+      for (int x : row)
+        System.out.printf("%3d ", x);
+      System.out.println();
+    }
+  }
+}
+```
+]]
+
+.right-column[
+.fs-90[
+```C
+#include <stdio.h>
+         
+int main() {
+  int m[][] = { {1,  1,   1,   1},
+                {2,  4,   8,  16},
+                {3,  9,  27,  81},
+                {4, 16,  64, 256},
+                {5, 25, 125, 625} };
+  int ans[4][5];
+  for (int row = 0; row < 5; row++)
+    for (int col = 0; col < 4; col++)
+      ans[col][row] = m[row][col];
+  
+  for (int r = 0; r < 4; r++)
+    for (int c = 0; c < 5; c++)
+      printf("%3d%c", ans[r][c],
+          c == 4 ? '\n' : ' ');
+}
+```
+]]
+
+---
+# `Java` vs. `C`
+
+- As seen with the examples `Java` and `C` look and feel very similar <br/>
+  (when we ignore the object oriented features in Java)
+
+- `Java` has adopted the same syntax style that `C` introduced earlier
+
+- If you know `Java` already you can start writing `C` code straight away!
+
+- We will learn the differences of how `Java` and `C` programs are executed and how memory is organised
+
+- In the rest of this lecture we will look in more depth into `C` and start exploring some differences with `Java`
+
+---
+# Compiler warnings and errors
+
+- Always remember: **The compiler is your friend!**
+
+- Errors and warnings are feedback from the compiler that there is something wrong with your program
+
+- A compiler error indicates that it is impossible to compile your program<br/>
+  You have to definitely change your program to get it compiling
+
+- A compiler warning indicates an unusual condition that *may* (and quite often do) indicate a problem<br/>
+  You should change the program to: *either* fix the problem *or* clarify the code to avoid the warning.
+
+- There is **no good reason to ignore warnings**!
+
+- The .boxed[`-Werror`] flag turns all warnings into errors making it impossible to compile a program with warnings
+
+- The .boxed[`-Wall`] flag enables most compiler warnings
+
+- Every warning and error that is caught by the compiler can not lead to a problem at runtime!
+
+- In this course we insist on using the .boxed[`-Wall -Werror`] flags (particular for your coursework!)
+
+
+---
+# Makefile 101
+
+- `make` is the most popular *build system* for `C` programs automating the process of compiling programs
+
+- Alternative build systems are: Maven, Bazel, Ninja. There exists much more ...
+
+- For `make` we are writing a `Makefile` which has the following basic structure:
+
+```Makefile
+program : source.c
+    clang -Wall -Werror source.c -o program
+# ^ this space must be a single tab character!
+```
+
+- The first two lines form a *rule* which explain how a *target* (in our case: `program`) is build
+
+- The lines below the fist line is the *commands* of the rule and define how the target is build
+
+- After the colon *dependencies* are listed, these are files or other targets which are required to build the target
+
+- Run `make` will execute the first rule of the `Makefile` in the current directory <br/>
+  .boxed[`make target`] will execute the rule to make the named target
+
+---
+# Entry point for every `C` program - `main`
+
+- Every `C` program has exactly *one* `main` function which is the entry point into the program
+
+```
+#include <stdio.h>
+int main() {
+    printf("Hello world!\n");
+}
+```
+
+- The `main` function is special in the sense that if the terminal `}` is reached .boxed[`0`] is automatically returned
+
+- A return value of .boxed[`0`] indicates a successful execution to the environment executing the program
+
+- A non-negative return value indicates an unsuccessful execution
+
+- Two valid version of `main`:
+
+```
+int main()                       { ... }
+int main(int argc, char* argv[]) { ... }
+```
+
+- The second version allows to process command line arguments<br/>
+  We will learn how to understand the signature next week when we learn about pointers
+
+---
+# Basic output with `printf`
+
+- `printf` is a function defined in .boxed[`#include <stdio.h>`] and allows a formated printing of values
+
+- The first argument is the *format string* containing special characters indicating the formating of values
+
+- Starting from the second arguments are the values to be printed
+
+- The number and order of special characters and values has to match
+
+.center[
+.box-70[
+| .smaller[Special Characters] | .smaller[Explanation] &nbsp;| .smaller[Argument Type] |
+|:-------:|---------:|----:|
+| `%c` | .smaller[single character] &nbsp;| `char` |
+| `%s` | .smaller[character string] &nbsp;| string: .smaller[(`char *`)] |
+| `%d` | .smaller[signed integer in decimal representation] &nbsp;| `int` |
+| `%f` | .smaller[floating-point number in decimal representation] &nbsp;| `float` / `double` |
+]
+.smaller[Full list of special characters at: [https://en.cppreference.com/w/c/io/fprintf](https://en.cppreference.com/w/c/io/fprintf)]
+]
+
+.box-80[
+```
+printf("%c %s", 'a', "string");        // prints: "a string"
+printf("%f - %f = %d", 3.14, 1.14, 2); // prints: "3.140000 - 1.140000 = 2"
+```
+]
+
+---
+# Variables
+
+- Variables are syntactically used exactly like in Java, e.g.: .boxed[`int x = 4; x++;`]
+
+- Variable *definitions* contain first the *data type*, then the *name* (or *identifier*) and an *initialization expression*
+
+.box-30[
+```C
+        int x = 4;
+```
+]
+
+- Why do we need to declare the data type for every variable?
+
+- Python doesn't require us to define data types:
+.box-30[
+```Python
+x = 4
+x = x + 1
+```
+]
+
+- `C` is a *statically typed* programming language where every expression has to have a data type<br/>
+   which is known without running the program
+
+.fs-150[.center[But what are data types for anyway?]]
+
+
+---
+# Representation of values and Data Types
+
+- What is the *meaning* of the following bit-pattern?
+.box-30[
+```
+        1000 0001
+```
+]
+
+--
+
+- Or more precisely, what *could* this bit-pattern mean?
+  - maybe: `129` if we want to represent a unsigned 8-bit long integer value
+  - maybe: `-127` if we want to represent a signed 8-bit long integer value with two's complement
+  - maybe: `-1` if we want to represent a 8-bit [Minifloat](https://en.wikipedia.org/wiki/Minifloat) value
+  - but also maybe it means the color blue? or `129` bananas? ...
+
+- A bit-pattern has no meaning on it's own! We, the human programmers, give bit-patterns meaning!
+
+- By declaring a variable with a *data type* (such as `int`) we decide what the bit-pattern in memory *means*
+
+.center[.fs-150[**Data types give bits meaning!**]<br/> .smaller[(That's why they are so important)]]
+
+---
+# Preserving meaning thanks to data types
+
+- To assist us writing *meaningful programs* the compiler enforces that computations<br/>
+  *preserve the meaningful representation of our data*
+
+- For example: for `x+1` the compiler ensures that a *meaningful* addition of the value one and `x` is performed.
+
+    When `x` has the data type `char` and the value `42` this will modify the bit-pattern like this:
+.box-40[.fs-90[
+```
+ 0010 1010 + 0000 0001 = 0010 1011
+```
+]]
+
+    When `x` has the data type `float` and the value `42` this will modify the bit-pattern like this:
+.box-40[.fs-90[
+```
+  0 10000100 01010000000000000000000
+ + 0 01111111 00000000000000000000000
+ ====================================
+      0 10000100 01011000000000000000000
+```
+]]
+
+- By enforcing operations to respect the data types the compiler prevents meaningless computations:
+.box-70[.fs-90[
+```
+error: invalid operands to binary + (have ‘float’ and ‘char *’)
+     x = x + "1";
+           ^
+```
+]]
+
+---
+# Representation of `C` variables in memory
+
+- Every variable in `C` is stored at a constant location in memory that does not change over its lifetime
+
+- In `C` the data type of a variable determines its representation in memory:
+
+.box-50[
+.fs-80[
+```
+    int x = 42;
+    // represented as: 0000 0000 0000 0000 0000 0000 0010 1010
+    float f = 42;
+    // represented as: 0100 0010 0010 1000 0000 0000 0000 0000
+```
+]]
+
+- By choosing a particular integer data type we are in control how much memory we use!
+
+.box-80[
+.fs-75[
+| Type name | Typical size in bytes &nbsp;| Value range |
+|:-------|---------:|----:|
+| `char` / `unsigned char`  | 1 byte &nbsp;| [-127, +127] / [0, 255] |
+| `short` / `unsigned short` | 2 bytes &nbsp;| [-32767, +32767] / [0, 65535] |
+| `int` / `unsigned int` | 4 bytes &nbsp;| [-2147483647, +2147483647] / [0, 4294967295] |
+| `long` / `unsigned long` | 4 or 8 bytes &nbsp;| at least as for `int` |
+| `long long` / `unsigned long long` | 8 bytes &nbsp;| [`\(- 2^{63} - 1 \)`, `\(+ 2^{63}-1\)` ] / [0, `\(2^{64}-1\)`] |
+]]
+
+- For example to store 1 million temperature measurements in Celsius<br/>
+  choosing an array of `char` values over an array of `int` values safes almost 3 MB of data<br/>
+  this is almost the entire size of my processors L3 cache!
+
+---
+# Boolean values in `C`
+
+- We have now seen multiple data types for representing integer and floating point values
+
+- What about the boolean values `true` and `false`?
+
+- In `C` every integer can be interpreted as a boolean, where .boxed[`0`] represents `false` and any other value `true`:
+
+.box-50[
+.left-column[.fs-80[
+```C
+int i = 5;
+while (i) {
+    i = i - 1;
+    printf("%d\n", i);
+}
+printf("done\n");
+```
+]]
+.left-column[
+&nbsp; &nbsp; prints &nbsp; &nbsp;
+]
+.left-column[.fs-80[
+```
+4
+3
+2
+1
+0
+done
+```
+]]
+]
+
+<div style="clear: both"></div>
+
+- Since the `C99` standard it is also possible to use the .boxed[`#inlude <stdbool.h>`] header:
+.box-70[.fs-80[
+```C
+#inlude <stdbool.h>
+int main() { bool a = true; bool b = false; bool c = a && b; printf("%d\n", c); }
+```
+]]
+
+- In `stdbool.h` `true` and `false` are declared as macros with the values .boxed[`1`] and .boxed[`0`]
+
+---
+# Lexical Scoping
+
+- Each pair of curly braces `{ }` is called a `block` in `C` and introduces a *lexical scope*
+
+- Variable names must be unique in the same lexical scope
+
+- For multiple variables with the same name, the variable declared in the innermost scope is used.<br/>
+  Which values will be printed?
+
+```
+int main() {                                  int foo(int i) {
+    int i = 5;                                  int j = i;
+    {                                           {
+        int j = foo(i);                           int j = i + 2;
+        printf("%d\n", j);                        printf("%d\n", j);
+    }                                           }
+}                                               return j + 1;
+                                              }
+```
+
+--
+
+- First `7` (from inside `foo`) and then `6` (from inside `main`) will be printed
+
+---
+# Scoping and preprocessor macros
+
+- Preprocessor macros are dangerous as they don't respect the lexical scoping
+
+- Consider the following macro
+
+```C
+#define ADD_A(x) x + a
+```
+
+- We could not define a function like this, because `a` is not in the lexical scope of the definition
+
+- If we now apply this macro it will work with what ever `a` is in scope where we *use* the macro:
+
+```C
+int add_one(int x) {
+    int a = 1;
+    return ADD_A(x); // will expand to: return x + a; and compute x + 1
+}
+
+int add_two(int x) {
+    int a = 2;
+    return ADD_A(x); // will expand to: return x + a; and compute x + 2
+}
+```
+
+- This is called *dynamic scoping* (in contrast to lexical scoping) and should best be avoided!
+
+---
+# Variable lifetime
+
+- We have learned that variables are stored at locations in memory that do not change over their lifetimes
+
+- But what is the *lifetime* of a variable? In `C` this depends how the memory for the variable was allocated. There are three cases:
+    1. *automatic*: These are all variables declared locally in a block (i.e. inside a pair of `{}`) and their lifetime ends at the end of the block.
+        All variables we have seen so far fall into this category.
+.fs-80[
+```C
+int main() {
+            int x = 42;
+        } // end of the block - end of the lifetime of x
+        ```
+]
+
+    2. *static*: Variables declared with the `static` keyword or defined at file-level outside all blocks.
+        The lifetime is the entire execution of the program.
+.fs-80[
+```C
+int foo() {
+            static int count_calls_to_foo = 0; // the variable is initialized only once
+            count_calls_to_foo++;
+        } // variable continues to life 
+        ```
+]
+
+    3. *allocated*: These are variables for which we have to explicitly request memory using *dynamic memory allocation* functions (such as `malloc`).
+        We manage the lifetime of these variables ourselves.
+
+---
+# Stack-based Memory management
+
+- When the lifetime of an *automatically* variable ends its memory location is freed<br/>
+  and can be reused by other variables
+
+- This memory management happens fully automatically as it is very easy to implement:
+  - every time a block is entered put aside a location in memory for every variable declared in the block
+  - every time a block is exited free the locations in memory for every variable declared in the block
+
+- As this memory management strategy added and removes memory locations in a last-in-first-out manner we call this *stack-based memory management* and the area of memory managed in this way *the stack*
+
+- We will learn in the next two week the other important area of memory called the *heap* which is manged manually by the programmer
+
+
+---
+# Structs
+
+- So far we have only seen variables with basic types<br/>
+  There are two important types which combine multiple elements: `arrays` and `structs`
+
+- A `struct` consists of a sequence of *members* of (potentially) different types:
+.box-50[.fs-90[
+    ```C
+struct point {
+      int x;
+      int y;
+    };
+
+    int main() {
+        struct point p = {1, 2};
+        printf("x = %d\ny = %d\n", p.x, p.y);
+    }
+    ```
+]]
+
+- The members are accessed like public class members in `Java` using the `.` notation
+
+- The members are stored next to each other in memory in the same order as defined in the `struct`
+
+- The type of a `struct` is written .boxed[`struct name`], but we often use this trick to shorten it:
+```
+typedef struct { int x; int y; } point; int main() { point p = {1, 2}; /* ... */ }
+```
+
+---
+# Arrays
+
+- Arrays consist of a multiple elements of the same type:
+.box-60[
+    ```C
+int main() {
+        int x[2] = {1, 2};
+        printf("x[0] = %d\nx[1] = %d\n", x[0], x[1]);
+    }
+    ```
+]
+
+- Arrays which are stored on the stack must have a fixed size (so that the memory is automatically managed)
+
+- We will learn how to use arrays for which the size can change next week
+
+- The elements on an array are stored next to each other in memory
+
+
+---
+# Strings and Characters
+
+- Strings in `C` are represented as arrays of characters
+```C
+char greeting[] = "Hello World";
+```
+  is the same as
+```C
+char greeting[] = {'H', 'e', 'l', 'l', 'o', ' ', 'W', 'o', 'r', 'l', 'd', '\0'};
+```
+
+- We use double quotes .boxed[`"`] to write a (ASCII) string literal and single quotes .boxed[`'`] to write a character literal
+
+- Strings in C are terminated by the special character .boxed[`'\0'`] that is added automatically for string literals
+
+- To print a string with `printf` we use the .boxed[`%s`] formation character
+```C
+printf("%s\n", greeting);
+```
+
+- If we forget the terminating .boxed[`'\0'`] character this will print the content of the memory<br/>
+  until it hits the next bit pattern equivalent of .boxed[`'\0'`]!
+
+---
+# Functions
+
+- Functions are probably *the most important* abstraction mechanism in computing science<br/>
+  They allow us to write code in a modular fashion which we can then reuse
+
+- A *function definition* in `C` looks like this:
+.box-60[.fs-90[
+    ```C
+int max(int lhs, int rhs) {
+        if (lhs > rhs) { return lhs; } else { return rhs; }
+    }
+    ```
+]]
+
+- The *return type* specifies the data type of the value that will be returned after evaluating the function<br/>
+  If a function returns no value the special type `void` is used as return type
+
+- The *name* which should describe the behaviour of the function
+
+- A *parameter list* which specifies the data type and name of each parameter expected by the function
+
+- The *function body* which is a block containing the code executed when calling the function
+
+- To call a function we provide an *argument* for each parameter and process the return value
+
+.box-40[.fs-90[
+```C
+            int x = max(5, 3);
+```
+]]
+
+
+---
+# Declaration vs. Definition
+
+- A function definition (as seen on the previous slide) fully specifies the behaviour of the function
+
+- A *function declaration* only specifies the interface describing how a function can be used:
+.box-40[.fs-90[
+```C
+      int max(int lhs, int rhs);
+```
+]]
+
+- Function declarations are important for writing modular software as it allows to separate the<br/>
+  interface (the declaration) from the implementation (the definition)
+
+- For calling a function (e.g. `max` or `printf`) the compiler checks that the data types of the call expression and the function declaration match:
+
+.box-90[.fs-90[
+```C
+int max(int lhs, int rhs);
+int main() { int x = max(4.5, 'b'); }
+```
+]
+.fs-80[
+```
+max.c:6:17: error: implicit conversion from 'double' to 'int' changes value from 4.5 to 4 [-Werror,-Wliteral-conversion]
+    int x = max(4.5, 'b');
+            ~~~ ^~~
+```
+]]
+
+- The linker searches for the definition which might be in a different file or library (as for `printf`)
+
+---
+# Call-by-value
+
+- When we call a function how are the arguments passed to it? <br/>
+  E.g. what happens to a variable which is passed to a function which modifies its parameters inside its body?
+
+.box-80[.fs-90[
+```C
+void set_to_zero(int x) { x = 0; }
+
+int main() {
+    int y = 42;
+    set_to_zero(y);
+    printf("%d\n", y); // what will be printed?
+}
+```
+]]
+
+--
+
+- The value `42` will be printed, because when we call a function we pass *a copy of the arguments* to it
+
+- That means `x` and `y` in the example above are stored at different locations in the memory<br/>
+  When `set_to_zero` is called the value of `y` is copied into the memory location of `x`
+
+- We call this *call-by-value* as the argument value is evaluated and stored in the parameter variable
+.box-80[.fs-90[
+```C
+void foo(int x)
+int main() { foo( 5 + 4 ); /* first evaluate 5 + 4 to 9 and then store it in x */ }
+```
+]]
+
+
+---
+# Call-by-value - Structs and Arrays
+
+- Functions can accept structs and arrays as parameters:
+
+.fs-90[
+```
+typedef struct { int x; int y; } point;
+
+int search(point needle, point haystack[], int haystack_size) {
+    for (int i = 0; i < haystack_size; i++) {
+        point candidate = haystack[i];
+        if (needle.x == candidate.x && needle.y == candidate.y) { return i; }
+    }
+    return -1;
+}
+```
+]
+
+- `structs` behave like the basic types and are passed-by-value<br/>
+  Changes to the `structs` members are therefore not visible outside the function
+
+- `arrays` are treated slightly specially:
+    - instead of copying the array (which would be expensive) the *address of the first element* is passed
+    - because of this changes to the `array` elements **are** now visible outside the function
+
+- The special treatment of `arrays` will make more sense when we learn about *pointers* next week
+
+---
+# Next week
+
+- Next week we are going to deepen our understanding of memory
+
+- We will learn what *pointers* are and why they are fundamental in understanding `C` and memory
+
+- We will learn the first steps of using dynamic memory allocation on the heap using `malloc`
+
+---
+name: closing
+background-image: url(../template/images/Closing16x9.jpg)
+class: title-slide, text-white
+count: false
+
+# Systems Programming
+## Lecture 1  .smaller[| 1.smaller[st] of October 2018]
+
+### Michel Steuwer .smaller[| [http://michel.steuwer.info](http://michel.steuwer.info/) | [michel.steuwer@glasgow.ac.uk](mailto:michel.steuwer@glasgow.ac.uk)]
+
+    </textarea>
+    <script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/MathJax.js?config=TeX-AMS_HTML&delayStartupUntil=configured" type="text/javascript"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0-alpha2/katex.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0-alpha2/contrib/auto-render.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0-alpha2/katex.min.css">
+
+    <script>
+    // macros
+    remark.macros['img'] = function (style) {
+        return '<img src="' + this + '" style="' + style + '" />';
+    };
+
+    remark.macros['team-member'] = function (name, style) {
+        return '<div style="position: absolute; ' + style + '"><img src="' + this + '" style="border-radius: 50%;" width="100%" />' + name + '</div>';
+    }
+    </script>
+
+    <script>
+      var renderMath = function() {
+        renderMathInElement(document.body, {delimiters: [
+            {left: "$$", right: "$$", display: true},
+            {left: "$", right: "$", display: false},
+            {left: "\\[", right: "\\]", display: true},
+            {left: "\\(", right: "\\)", display: false},
+        ]});
+      }
+
+      var slideshow = remark.create({
+          ratio: '16:9',
+          highlightLanguage: 'c',
+          highlightStyle: 'solarized-light', // light: 'idea' 'solarized-light', dark: 'monokai'
+          highlightLines: true,
+          highlightSpans: true
+          }); //, renderMath);
+
+      // Setup MathJax
+      MathJax.Hub.Config({ tex2jax: { skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'] } });
+      MathJax.Hub.Configured();
+    </script>
+  </body>
+</html>
