@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Systems Programming</title>
+    <meta charset="utf-8">
+    <style>
+      @import url(../template/lift.css);
+      @import url(../template/glasgow.css);
+      @import url(../template/print.css);
+    </style>
+  </head>
+  <body>
+    <textarea id="source">
+
+name: title
+background-image: url(../template/images/Title16x9.jpg)
+class: title-slide
+count: false
+
+# Systems Programming
+## Lecture 3  .smaller[| 8.smaller[th] of October 2018]
+
+### Michel Steuwer .smaller[| [http://michel.steuwer.info](http://michel.steuwer.info/) | [michel.steuwer@glasgow.ac.uk](mailto:michel.steuwer@glasgow.ac.uk)]
+
+---
+# What is (computer) memory?
+
+From the Oxford English Dictionary:
+
+**memory** | ˈmɛm(ə)ri |
+
+noun
+
+1. the faculty by which the mind stores and remembers information
+
+2. something remembered from the past
+
+3. *the part of a computer in which data or program instructions can be stored for retrieval.*
+
+.center[![:img width: 45%](images/RAM.jpg)]
+
+
+---
+# How should we think about memory?
+
+.center[
+![:img width: 70%](images/RobotMemory.png)<br/>
+We can think of memory as a sorting cabinet where each box stores the value of a variable<br/>
+The variable name is the *label* which allows us to remember where we stored what
+]
+
+
+---
+# How should we think about memory?
+
+We can also think of memory as a single long street (called *memory lane*) where each house has a unique *address* 
+
+We have some notion of *spacial locality*:<br/>
+Houses close to each other are neighbours, but there are also houses far away at the other end of memory lane<br/><br/>
+Spacial locality is an important property exploited by *caches* .smaller[(separated fast but small memories)]
+
+
+<div style="position: absolute; left: 0px; ">
+  ![:img width: 130%](images/Street.png)
+</div>
+
+---
+# Computer Memory in Programming
+
+- We can think of memory as a very large one-dimensional array (or a large buffer)<br/>
+  where instead of indices into the array we use names to identify variables
+
+- These two programs behave exactly the same:
+
+.box-70[
+```C
+int main() {                  int main() {
+                                int memory[3];
+  int x = 42;                   memory[0] = 42;
+  int y = 23;                   memory[1] = 23;
+  int z = x * y;                memory[2] = memory[0] * memory[1];
+}                             }
+```
+]
+
+<br/><br/>
+
+- Obviously, arrays only store elements of the same type where memory stores variables of different types
+
+
+---
+# Byte Addressable Memory
+
+- Every *byte* (a collection of 8 bits) in memory has it's own *address*
+
+- On a 64-bit architecture these addresses are 64-bit (or 8 bytes) long
+
+- That means a 64-bit architecture can address (in theory) up to `\( 2^{64} \)` bytes = 16 exabytes
+
+- In practice `x86-64` only uses the lower 48 bits of an address, supporting up to `\( 2^{48}\)` bytes = 256 TB<br/><br/><br/>
+
+- To modify a single bit we always have to load and store an entire byte:
+
+.box-70[
+```C
+int main() {
+  unsigned char byte = 0;
+  byte = byte | (1 << 3); // set the 3rd bit to 1
+  printf("%d\n", byte);   // prints 8 (== 2^3)
+}
+```
+]
+
+---
+# Variables in memory
+
+- As we have learned last week:<br/>
+  every variable in `C` is stored at a constant location in memory that does not change over its lifetime
+
+- The location of a variable identifiable by it's *address*
+
+- Depending on the size of the data type the value of the variables will span multiple bytes in memory
+
+- We can ask the address of a variable in `C` using the ** *address-of* operator `&`**:
+
+.box-70[
+```C
+int main() {
+  int x = 42;
+  int y = 23;
+  printf("&x = %p\n", &x); // print the address of x
+  printf("&y = %p\n", &y); // print the address of y
+}
+```
+]
+
+- We can ask the size of a variable using the `sizeof` operator:<br/>
+  In the example .boxed[`sizeof(x)`] prints .boxed[`4`] as an `int` value is represented by 4 bytes
+
+---
+# Pointers
+
+- We can store the address of a variable as the value of *another variable* that we call a *pointer*
+
+.box-80[
+```C
+int main() {
+  int x = 42;
+  int * pointer_to_x = &x; // this is a pointer referring to x
+  printf("value of pointer_to_x: %p\n", pointer_to_x); // prints 0x77...
+```
+]
+
+- The ** *dereference operator* `*` ** allows us to access the value of the variable we are pointing to:
+
+.box-80[
+```C
+  printf("value of x: %d\n", *pointer_to_x); // prints 42
+}
+```
+]
+
+- A pointer to a variable of data type .boxed[`t`] has the data type .boxed[`t *`]
+
+- Every pointer has the same size (independent of the type it's pointing to) because it stores an address
+
+- Pointers on a 64-bit architecture are 8 bytes (or 64 bits)
+
+---
+# Pointers are normal variables
+
+- A pointer is a variable like any other, that means:
+
+- The pointer is stored at its own location
+
+.box-70[
+```C
+  int x = 42;     // stored at 0x7ffeedbed3dc
+  int * ptr = &x; // stored at 0x7ffeedbed3d0
+```
+]
+
+- We can take the address of where the pointer is stored using the address operator:
+
+.box-70[
+```C
+  printf("%p\n", &ptr); // prints 0x7ffeedbed3d0
+```
+]
+
+- We can store the address of a pointer in another pointer:
+
+.box-70[
+```C
+  int * * ptr_to_ptr = &ptr; // stored at 0x7ffeed7ed3c8
+```
+]
+
+- We can change were a pointer points to:
+
+.box-70[
+```C
+  int y = 23; // stored at 0x7ffeebaf23c4
+  ptr = &y;
+```
+]
+
+---
+# Pointers and `Null`
+
+- Sometimes there is no meaningful value for a pointer at a certain time
+
+- We use the value .boxed[`0`] or the macro .boxed[`NULL`] to represent a pointer that points to *nothing*
+
+- `NULL` often represents an erroneous state, e.g. that an element wasn't found in an array:
+
+.box-90[
+```C
+// return pointer to value found in array
+// return NULL if value not found in array
+float* search(float needle, float haystack[], int haystack_size) {
+    for (int i = 0; i < haystack_size; i++)
+        if (needle == haystack[i]) { return &haystack[i]; }
+    return NULL;
+}
+```
+]
+
+- Dereferencing a `NULL` pointer will crash your program!<br/>
+  This has led to many software bugs and their inventer Tony Hoare has called it his *billion-dollar mistake*
+
+---
+# Pointers and `const`
+
+- In `C` every variable can be annotated with the *type qualifier* `const` to indicate that the content of the variable can not be changed
+
+- This is enforced by the compiler:
+
+.fs-80[
+```
+  const_error.c:4:6: error: cannot assign to variable 'pi' with const-qualified type 'const float'
+  pi = 2.5;
+  ~~ ^
+const_error.c:3:15: note: variable 'pi' declared const here
+  const float pi = 3.14;
+  ~~~~~~~~~~~~^~~~~~~~~
+```
+]
+
+- Pointers can be `const`, i.e. unmodifiable, in three ways:
+  1. The *pointer itself*, i.e. the address, can not be changed: .boxed[`float * const ptr;`]
+  
+  2. The *value we are pointing to* can not be changed: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; .boxed[`const float * ptr;`]
+
+  3. *Both* value and pointer can not be changed: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; .boxed[`const float * const ptr;`]
+
+
+---
+# Linked List with pointers and `structs`
+
+- Pointers and `struct`s are useful in building data structures, as example we look at a (single) linked list
+
+- A linked list contains of *node*s with a *value* and a *pointer to the next node*:
+
+.box-60[
+```C
+   struct node { char value; struct node * next; };
+```
+]
+
+- The last node in the list has a next-pointer to `NULL`
+
+.box-60[
+```C
+int main() {
+  struct node c = {'c', NULL};
+  struct node b = {'b', &c};
+  struct node a = {'a', &b};
+```
+]
+
+- We use a pointer to iterate over the linked list:
+
+.box-60[
+```C
+  struct node * ptr = &a;
+  while (ptr) {
+    printf("%d\n", (*ptr).value);
+    ptr = (*ptr).next;
+  }
+}
+```
+]
+
+---
+# Binary (Search) Tree
+
+.box-60[.fs-90[
+```C
+struct node {
+  char value;
+  struct node * left_child;
+  struct node * right_child;
+};
+```
+]]
+
+- If we keep the binary tree ordered (thus it forms a *binary search tree*) we can search efficiently in it:
+
+.box-60[.fs-90[
+```C
+node * find(char value , node * root) {
+  if (value == root->value) {
+    return root;
+  }
+  if (value < root->value && root->left_child != NULL) {
+    return find(value, root->left_child);
+  }
+  if (value > root->value && root->right_child != NULL) {
+    return find(value, root->right_child);
+  }
+  return NULL;
+}
+```
+]]
+
+- .boxed[`s_ptr->m`] is a notation to access member `m` of a `struct`-pointer `s_ptr`
+  and is equivalent to .boxed[`(*s_ptr).m`]
+
+
+---
+# Arrays in Memory
+
+- Last week we have seen one- and two-dimensional arrays:
+
+.box-60[
+```C
+      int vector[6]    = {1, 2, 3, 4, 5, 6};
+      int matrix[2][3] = { {1, 2, 3}, {4, 5, 6} };
+```
+]
+
+- `vector` and `matrix` in the example are both stored exactly the same in memory:
+
+.box-80[
+![:img width: 17%](images/vector_in_memory.png)
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+![:img width: 45%](images/matrix_in_memory.png)
+]
+
+- The two-dimensional array is stored in a *row major* format (i.e. rows are stored after another)
+
+---
+class: safe-space
+# Pointers and Arrays
+
+- Pointers and arrays are closely related
+
+- The name of an array refers to the *address of the first element* when assigned to a pointer variable:
+
+.box-80[
+```C
+int vector[6] = {1, 2, 3, 4, 5, 6};
+int * ptr = vector; // this is equivalent to: int * ptr = &(vector[0]);
+```
+]
+
+ - We can use the array indexing notation on pointers:
+
+.box-80[
+```C
+printf("5th element: %d\n", ptr[4]); // prints "5th element: 5"
+```
+]
+
+- Two important differences:
+
+ - `sizeof` returns different values (size of array vs. size of pointer):
+
+ .box-80[
+```C
+printf("%ld\n", sizeof(vector)); // prints '24' (== 6 * 4 bytes)
+printf("%ld\n", sizeof(ptr));    // prints '8'  (size of a pointer)
+```
+]
+
+ - we can not change `vector`, only its elements:
+
+.box-80[
+```C
+vector = another_vector; // error: array type 'int [6]' is not assignable
+```
+]
+
+---
+# Pointer Arithmetic
+
+- We can use *pointer arithmetic* to modify the value of a pointer. We can:
+
+  1. Add and subtract integer values to/from a pointer
+  2. subtract two pointers from each other
+  3. compare pointers
+
+.box-60[.fs-80[
+```C
+int vector[6] = {1, 2, 3, 4, 5, 6};
+
+int * ptr = vector; // start at the beginning
+  while (ptr <= &(vector[5])) {
+    printf("%d ", *ptr); // print the element in the array
+    ptr++; // go to the next element
+}
+```
+]]
+
+- Pointer arithmetic takes into account the size of the type the pointer is pointing to:
+
+.box-70[.fs-80[
+```C
+int * i_ptr = &i; char* c_ptr = &c;
+i++;    // this adds 4-bytes (sizeof(int)) to the address stored at i_ptr
+c += 2; // this adds 2-bytes (2 * sizeof(char)) to the address stored at c_ptr
+```
+]]
+
+- The expressions .boxed[`ptr[i]`] and .boxed[`*(ptr + i)`] are equivalent
+
+---
+# Call-by-value revisited
+
+- We learned last week that arguments are passed *by-value* to functions
+
+- That means that the value of the argument is copied into the parameter variable
+
+- This is also true for pointers
+
+- Arrays are treated specially and a *pointer to the fist element* is copied instead of the entire array
+
+.box-70[
+```C
+float average(float array[], int size) {
+  float sum = 0.0f;
+  for (int i = 0; i < size; i++) { sum += array[i]; }
+  return sum / size;
+}
+```
+]
+
+- The array is treated like a pointer, in fact .boxed[`int param[]`] and .boxed[`int * param`] are interchangeable:
+
+.box-70[
+```C
+float average(float array[], int size);
+float average(float * array, int size);
+```
+]
+
+
+<!--
+  Here the value of `snd` is copied into `ptr` when calling `print_next`, the change of `ptr` remains local to the function
+
+```C
+void print_next(int * ptr) { ptr++; if (ptr) { printf("%d\n", *ptr); } }
+
+int main() {
+  int array[6] = {0, 1, 2, 3, 4, 5};
+  int* snd = &(array[2])
+  print_next(snd);        // this will print '3'
+  printf("%d\n", *snd);   // this will print '2'
+}
+```
+  -->
+
+---
+# `main` function with command line argument
+
+- This allows us to understand the definition of the `main` function that processes command line arguments
+
+.box-50[
+```
+  int main(int argc, char* argv[]) { ... }
+```
+]
+
+- The `argc` argument specifies the number of command line arguments
+
+- The `argv` argument specifies an array of the command line arguments as strings
+
+  - A single string is represented as an array of characters: .boxed[`char *`]
+
+  - The type of `argv` .boxed[`char \* []`] can also be written .boxed[`char \* \*`]
+
+.box-60[
+```C
+#include <stdio.h>
+
+int main(int argc, char * argv[]) {
+  // print every command line argument
+  for (int i = 0; i < argc; i++)
+    printf("%s\n", argv[i]);
+}
+```
+]
+
+---
+# Writing Generic Code with `void *`
+
+- Sometimes we want to write code in a generic way so that it works will all data types<br/>
+  e.g. swapping two variables or sorting algorithms 
+
+- To swap two variables `x` and `y` of arbitrary type we copy all bytes at the location of `x` to `y` and vise-versa
+
+- For this we write a function .boxed[`swap`] that takes two pointers and number of bytes that have to be swapped:
+
+.box-40[.fs-90[
+```C
+  void swap(void *x, void *y, size_t l) {
+    char *a = x, *b = y, tmp;
+    while(l--) {
+       tmp  = *a;
+       *a++ = *b;
+       *b++ = c; }
+  }
+```
+]]
+
+- The special pointer of type .boxed[`void *`] is a generic pointer. Every pointer is automatically convertible to it
+
+.center[
+A `void`-pointer only serves as an address pointing to *something*.<br/>
+We can not access the value we are pointing to as we don't know what those bits mean.<br/>
+**Dereferencing a `void` pointer is forbidden.**
+]
+
+---
+class: split-80
+# Stack vs. Heap as memory regions
+
+.left-column[
+- So far we have only seen variables with *automatic* lifetime managed by the compiler
+
+- These variables are stored in a part of memory that is called the .bigger[*stack*]
+ 
+- The size of every variable on the stack has to be known statically, i.e. without executing the program
+
+- For many important use cases we don't know the size of a variable statically, e.g. dynamically sized arrays
+
+- For such cases we manage the memory manually by dynamically requesting and freeing memory
+
+- The part of the memory used for dynamic memory allocation is called the .bigger[*heap*]
+
+- Stack and heap share the same address space and grow with use towards each other
+]
+
+.right-column[.center[
+![:img width: 75%](images/stack-heap.png)<br/>
+.smaller[stack and heap are in<br/> a single address space]
+]]
+
+---
+# Dynamic memory management
+
+- We request a new chunk of memory from the heap using the .boxed[`malloc`] function:
+
+.box-70[
+```C
+      void* malloc( size_t size ); // defined in <stdlib.h>
+```
+]
+
+- We specify the number of bytes we like to allocate
+
+- If `malloc` succeeds a `void`-pointer to the first byte of the uninitialised memory is returned
+
+- If `malloc` fails a `NULL` pointer is returned
+
+<br/>
+
+- Memory allocated with `malloc` must be manually deallocated by calling `free` (exactly once):
+
+.box-70[
+```C
+      void free( void* ptr ); // defined in <stdlib.h>
+```
+]
+
+- If `free` is not called we *leak* the allocated memory
+
+---
+# Dynamically sized array example
+
+- We use `malloc` to implement dynamically sized arrays
+
+- Here the size of the `array` depends on the first number entered by the user
+
+.box-70[.fs-90[
+```C
+#include <stdlib.h>
+#include <stdio.h>
+
+int main() {
+  printf("How many numbers do you want to average?\n");
+  int count;
+  if (scanf("%d", &count) == EOF) { exit(-1); }
+  // allocate memory based on dynamic input (here its size)
+  int* array = malloc(count * sizeof(int));
+  for (int i = 0; i < count; i++) {
+    int number;
+    if (scanf("%d", &number) == EOF) { exit(-1); }
+    array[i] = number;
+  }
+
+  float sum = 0.0f;
+  for (int i = 0; i < count; i++) { sum += array[i]; }
+  printf("The average is %.2f\n", sum / count);
+  free(array); // free the memory manually after use
+}
+```
+]]
+
+---
+# Linked list extended example
+
+- Using `malloc` we are now able to define functions for creating, extending, and freeing lists:
+
+.box-70[.fs-90[
+```C
+struct node { char value; struct node * next; }; // same as before
+
+struct node* create_node(char value) {
+  struct node * node_ptr = malloc(sizeof(struct node));
+  node_ptr->value = value; node_ptr->next  = NULL;
+  return node_ptr;
+}
+
+void add_node_to_list(struct node* list, struct node* node) {
+  if (!list) return;
+  while (list->next) { list = list->next; }
+  list->next = node;
+}
+
+void free_list(struct node* list) {
+  if (!list) return;
+  while (list->next) {
+    struct node* head = list;
+    list = list->next;
+    free(head);
+  }
+}
+```
+]]
+
+---
+# Returning a pointer to a local variable
+
+- It is an easy mistake to return a pointer to a local variable. Never do it!
+
+- Why?
+
+--
+
+- By returning a pointer to a local variable the pointer has a longer lifetime than the variable its pointing to
+
+.box-80[
+```C
+struct node* create_node(char value) {
+  struct node node;
+  node.value = value; node.next  = NULL;
+  return &node;
+} // lifetime of node ends here ... but its address lives on in a_ptr
+
+int main() {
+  struct node* a_ptr = create_node('a');
+  // ...
+} // lifetime of a_ptr (pointing to node) ends here
+```
+]
+
+
+<br/>
+.center[** Never return a pointer to a local variable from a function! **]
+
+---
+# Function Pointers
+
+- Memory does not store data but also program code. It is possible to have a pointer pointing to code!
+
+- These pointers are called *function pointers* and have the type: .boxed[`return_type (*)(argument_types)`]
+
+- A common use case is passing functions as arguments to other functions:
+
+.box-70[.fs-90[
+```C
+// defined in <stdlib.h>
+void qsort( void *ptr, size_t count, size_t size,
+            int (*comp)(const void *, const void *) );
+
+// defined in qsort_example.c
+int compare(void* fst, void* snd) { /* ... */ };
+int main() {
+  // ...
+  qsort(array, array_length, sizeof(array[0]), compare);
+  // ...
+}
+```
+]]
+
+- Here `compare` is passed as argument to `qsort` and assigned to the function pointer `comp` in line 3
+
+- Function names are automatically converted to function pointers, so that we do not have to write .boxed[`&compare`]
+
+---
+# Generic Quicksort
+
+- `qsort` in `C` is written generically so that it can sort data of any data type
+
+- `compare` takes two `void`-pointers and returns a negative integer if the first argument is *less than* the second, a positive integer if it is *greater than* and zero if they are equal
+
+- `compare` has to *cast* (i.e. convert) the pointers into a concrete pointer type before dereferencing them:
+
+.box-60[.fs-90[
+```C
+int compare(const void* fst, const void* snd) {
+  const float* f_fst = fst; const float * f_snd = snd;
+  return *f_fst - *f_snd;
+}
+```
+]]
+
+- This is a good example of the use of a `void`-pointer:<br/>
+  when passing the pointers `fst` and `snd` around in `qsort` these are addresses pointing *somewhere*<br/>
+  inside of `compare` we first have to give meaning to the bits we are pointing to<br/>
+  before we are able to make a meaningful comparison
+
+---
+# Next week
+
+- We are going to look at **resource management** and **ownership**
+
+- We will particular focus on **memory management**
+
+- We will learn a technique in **`C++`** that assists ownership-based resource management
+
+---
+name: closing
+background-image: url(../template/images/Closing16x9.jpg)
+class: title-slide, text-white
+count: false
+
+# Systems Programming
+## Lecture 3  .smaller[| 8.smaller[th] of October 2018]
+
+### Michel Steuwer .smaller[| [http://michel.steuwer.info](http://michel.steuwer.info/) | [michel.steuwer@glasgow.ac.uk](mailto:michel.steuwer@glasgow.ac.uk)]
+
+    </textarea>
+    <script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/MathJax.js?config=TeX-AMS_HTML&delayStartupUntil=configured" type="text/javascript"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0-alpha2/katex.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0-alpha2/contrib/auto-render.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0-alpha2/katex.min.css">
+
+    <script>
+    // macros
+    remark.macros['img'] = function (style) {
+        return '<img src="' + this + '" style="' + style + '" />';
+    };
+
+    remark.macros['team-member'] = function (name, style) {
+        return '<div style="position: absolute; ' + style + '"><img src="' + this + '" style="border-radius: 50%;" width="100%" />' + name + '</div>';
+    }
+    </script>
+
+    <script>
+      var renderMath = function() {
+        renderMathInElement(document.body, {delimiters: [
+            {left: "$$", right: "$$", display: true},
+            {left: "$", right: "$", display: false},
+            {left: "\\[", right: "\\]", display: true},
+            {left: "\\(", right: "\\)", display: false},
+        ]});
+      }
+
+      var slideshow = remark.create({
+          ratio: '16:9',
+          highlightLanguage: 'c',
+          highlightStyle: 'solarized-light', // light: 'idea' 'solarized-light', dark: 'monokai'
+          highlightLines: true,
+          highlightSpans: true
+          }); //, renderMath);
+
+      // Setup MathJax
+      MathJax.Hub.Config({ tex2jax: { skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'] } });
+      MathJax.Hub.Configured();
+    </script>
+  </body>
+</html>

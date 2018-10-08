@@ -145,6 +145,8 @@ a {
 .split-60 .right-column {width: 40%}
 .split-70 .left-column {width: 70%}
 .split-70 .right-column {width: 30%}
+.split-80 .left-column {width: 80%}
+.split-80 .right-column {width: 20%}
 
 .split-35-55 .left-column {width: 35%}
 .split-35-55 .right-column {width: 55%}
@@ -156,6 +158,8 @@ a {
 .split-45-45 .right-column {width: 45%}
 .split-50-45 .left-column {width: 50%}
 .split-50-45 .right-column {width: 45%}
+
+.safe-space p {margin-top: 5px; margin-bottom: 5px}
 
 .box-20 { width: 20%; margin: 0 auto; display: block; }
 .box-30 { width: 30%; margin: 0 auto; display: block; }
