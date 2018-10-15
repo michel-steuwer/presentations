@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Systems Programming</title>
+    <meta charset="utf-8">
+    <style>
+      @import url(../template/lift.css);
+      @import url(../template/glasgow.css);
+      @import url(../template/print.css);
+    </style>
+  </head>
+  <body>
+    <textarea id="source">
+
+name: title
+background-image: url(../template/images/Title16x9.jpg)
+class: title-slide
+count: false
+
+# Systems Programming
+## Lecture 4  .smaller[| 15.smaller[th] of October 2018]
+
+### Michel Steuwer .smaller[| [http://michel.steuwer.info](http://michel.steuwer.info/) | [michel.steuwer@glasgow.ac.uk](mailto:michel.steuwer@glasgow.ac.uk)]
+
+
+---
+# Recap from last week: Memory
+
+- Every *byte* (a collection of 8 bits) in memory has it's own (usually) 64-bit long *address*
+
+- Every variable in `C` is stored at a constant location in memory that does not change over its lifetime
+
+- The location of a variable identifiable by it's *address*
+
+- We can ask the address of a variable in `C` using the ** *address-of* operator `&`**
+
+- We can ask the size of a variable using the `sizeof` operator
+
+.box-70[
+```C
+int main() {
+  int x = 42;
+  int y = 23;
+  printf("&x = %p\n", &x); // print the address of x
+  printf("&y = %p\n", &y); // print the address of y
+}
+```
+]
+
+---
+# Recap from last week: Pointers
+
+- We can store the address of a variable as the value of *another variable* that we call a *pointer*
+
+- A pointer is a variable like any other (stored at its own location)
+
+- The ** *dereference operator* `*` ** allows us to access the value of the variable we are pointing to
+
+- A pointer to a variable of data type .boxed[`t`] has the data type .boxed[`t *`]
+
+- The special pointer of type .boxed[`void \*`] is a generic pointer. *Dereferencing a `void` pointer is forbidden.*
+
+- We use the value .boxed[`0`] or the macro .boxed[`NULL`] to represent a pointer that points to *nothing*
+
+- Dereferencing a `NULL` pointer will crash your program!
+
+.box-80[
+```C
+int main() {
+  int x = 42;
+  int * pointer_to_x = &x; // this is a pointer referring to x
+  printf("value of pointer_to_x: %p\n", pointer_to_x); // prints 0x77...
+```
+]
+
+---
+# Dynamic memory management in `C`
+
+- We request a new chunk of memory from the *heap* using the .boxed[`malloc`] function:
+
+.box-70[
+```C
+      void* malloc( size_t size ); // defined in <stdlib.h>
+```
+]
+
+- We specify the number of bytes we like to allocate
+
+- If `malloc` succeeds a `void`-pointer to the first byte of the uninitialised memory is returned
+
+- If `malloc` fails a `NULL` pointer is returned
+
+<br/>
+
+- Memory allocated with `malloc` must be manually deallocated by calling `free` (exactly once):
+
+.box-70[
+```C
+      void free( void* ptr ); // defined in <stdlib.h>
+```
+]
+
+- If `free` is not called we *leak* the allocated memory
+
+---
+# Binary Tree
+
+- Using `malloc` and `free` we can build data structures like binary trees:
+
+.box-70[.fs-80[
+```
+struct node { const char * value; struct node * left_child; struct node * right_child; };
+typedef struct node node;
+
+node * create_tree(const void * value, node * left_child, node * right_child) {
+  node * root = malloc(sizeof(node));
+  if (root) {
+    root->value = value;
+    root->left_child = left_child;
+    root->right_child = right_child; }
+  return root;
+}
+
+void destroy_tree(node * root) {
+  if (root) {
+    destroy_tree(root->left_child);
+    destroy_tree(root->right_child);
+    free( root ); }
+}
+
+int main() {
+  node * root = create_tree("b",
+    create_tree("a", NULL, NULL),
+    create_tree("c",
+      create_tree("d", NULL, NULL),
+      create_tree("e", NULL, NULL)
+      )
+    );
+}
+```
+]]
+
+---
+# Generic Binary Tree
+
+- How can we write a generic binary tree that stores a value of arbitrary type in each node?
+
+--
+
+- *Solution:* use the generic .boxed[`void *`] to store an address in the node.<br/>
+  We don't care what data is stored at the address.
+
+.box-90[.fs-90[
+```
+struct node { const void * value_ptr; struct node * left_child; struct node * right_child; };
+```
+]]
+
+- Challenge: how do we write a `print` function that prints each value?<br/>
+  Remember, we are not allowed to dereference any `void *` to access its value.
+
+.box-90[.fs-90[
+```
+void print(node * root) {
+  if (root) {
+    // ... how to print the value at: root->value_ptr ?
+    print(root->left_child);
+    print(root->right_child);
+  }
+}
+```
+]]
+
+- We need a way to allow the caller of this function to specify how to print the value.
+
+---
+# Function Pointers
+
+- Memory does not store data but also program code. It is possible to have a pointer pointing to code!
+
+- These pointers are called *function pointers* and have the type: .boxed[`return_type (*)(argument_types)`]
+
+- Now we can implement the `print` function:
+
+.box-80[.fs-90[
+```
+void print_string(const void * value_ptr) {
+  char * string = value_ptr; // by changing the type we give the bits again meaning
+  printf("%s\n", string);
+}
+
+void print(node * root, void (* print_function)(const void *) ) {
+  if (root) {
+    print_function(root->value_ptr);
+    print(root->left_child, print_function);
+    print(root->right_child, print_function); }
+}
+
+int main() {
+  node * root = ... ;
+  print(root, print_string);
+}
+```
+]]
+
+- Function names are automatically converted to function pointers, we don't have to write .boxed[`&print_string`]
+
+---
+# Example: Quicksort
+
+- In this example `compare` is passed as argument to `qsort` and assigned to the function pointer `comp` in line 3
+
+.box-70[.fs-90[
+```C
+// defined in <stdlib.h>
+void qsort( void *ptr, size_t count, size_t size,
+            int (*comp)(const void *, const void *) );
+
+int main() {
+  // ...
+  qsort(array, array_length, sizeof(array[0]), compare);
+  // ...
+}
+```
+]]
+
+- `compare` takes two `void`-pointers and returns a negative integer if the first argument is *less than* the second, a positive integer if it is *greater than* and zero if they are equal
+
+- `compare` has to *cast* (i.e. convert) the pointers into a concrete pointer type before dereferencing them:
+
+.box-60[.fs-90[
+```C
+int compare(const void* fst, const void* snd) {
+  const float* f_fst = fst; const float * f_snd = snd;
+  return *f_fst - *f_snd;
+}
+```
+]]
+
+<!-- - This is a good example of the use of a `void`-pointer:<br/>
+  when passing the pointers `fst` and `snd` around in `qsort` these are addresses pointing *somewhere*<br/>
+  inside of `compare` we first have to give meaning to the bits we are pointing to<br/>
+  before we are able to make a meaningful comparison -->
+
+---
+# Memory Management Challenges
+
+- When we allocate memory ourself with `malloc` we are responsible for calling `free`
+
+- We must call `free` *exactly* once for each address we obtained from `malloc`
+
+- It is good practice to assign the `NULL` value to pointers that have been freed<br/>
+  But this does not prevent all *double free* errors:
+
+.box-90[.fs-80[
+```C
+int main() {
+  void * ptr1 = malloc(sizeof(int));
+  void * ptr2 = ptr1;
+  free(ptr1);
+  ptr1 = NULL;
+  free(ptr1); // OK. Calling free with NULL is fine
+  free(ptr2); // *** error for object 0x7f9355c00690: pointer being freed was not allocated
+}
+```
+]]
+
+- Another problem are *dangling pointers* which point to locations which have been freed:
+
+.box-90[.fs-80[
+```C
+int main() {
+  node * left_child = create_tree("a", NULL, NULL);
+  node * root = create_tree("b", left_child, NULL );
+  destroy_tree(left_child);
+  // now: root->left_child points to freed memory!
+}
+```
+]]
+
+---
+# More Memory Management Challenges
+
+- If we never call `free` for an heap-allocated pointer we call this a *memory leak*
+
+.box-90[.fs-80[
+```
+#include <stdlib.h>
+#include <stdio.h>
+int main() {
+    char *mem = (char*) malloc( sizeof(char) * 20); // allocate some memory
+    if (!mem) { exit(EXIT_FAILURE); }               // check if allocation went fine
+
+    // use allocated memory
+
+    mem = (char*) malloc( sizeof(char) * 30);       // allocate more memory.
+    // we just lost the pointer to the old memory
+
+    // use newly allocated memory
+
+    free(mem);                                      // free newly allocated memory
+    // we leaked the memory allocated first
+}
+```
+]]
+
+
+---
+# Ownership
+
+- To organise memory management we adopt the concept of *ownership*
+
+- *Ownership* means that we identify a single entity which is responsible to manage a location in memory
+
+- For example we say that the `parent` in a tree *owns* its `child`ren<br/>
+  The parent is responsible for allocating and freeing the memory used by the children.
+
+- The `C` language does not assist by enforcing the ownership model 
+
+- Next we will learn a feature in `C++` that does help us to follow the ownership model
+
+- In `rust` ownership is enforced by the compiler which makes *double free* and *dangling pointers* impossible and prevents most common cases of leaking of memory
+
+
+---
+# Ownership in `C++`: RAII
+
+- In `C++` we can express ownership of a location of heap memory explicitly in the code
+
+- The creator of `C++` has invented a programming idiom for this: RAII - *Resource acquisition is initialization*
+
+- The idea is that we tie the management of a resource to the lifetime of a variable on the stack.<br/>
+  The allocation of the resource (e.g. the `malloc` call) is done when we create the variable.<br/>
+  The deallocation of the resource (e.g. the `free` call) is done when the variable is destroyed.
+
+.box-80[.fs-90[
+```
+int main() {
+  std::vector<int> v = {1, 2, 3, 4, 5, 6}; // heap memory is allocated for the numbers
+  // use v
+} // memory on the heap will be freed automatically
+```
+]]
+
+- In `C++` this idiom is implemented by `struct` data types with two *member functions* (called methods in Java):
+  - The *constructor* which is called when creating values
+  - The *destructor* which is called when a variable of this type reaches its lifetime
+
+
+---
+# Implementing RAII in `C++` - Example
+
+- If we want to store a number of integer values on the heap, we create a special `struct` data type:
+
+.box-70[.fs-90[
+```
+struct ints_on_the_heap { // This is C++ code and not legal C!
+  int * ptr;
+  // constructor
+  ints_on_the_heap(int size) {
+    ptr = (int*)malloc(sizeof(int) * size);
+  }
+  // destructor
+  ~ints_on_the_heap() { free(ptr); }
+};
+typedef struct ints_on_the_heap ints_on_the_heap;
+```
+]]
+
+- When initializing a variable on the stack with this data type it will allocate memory on the heap
+
+- Once the variable on the stack reaches it lifetime it will automatically free the memory on the heap
+
+.box-90[.fs-90[
+```
+int main() {
+  ints_on_the_heap i(23); // i is on the stack; memory for 23 ints is allocated on the heap
+  i.ptr[22] = 42;
+} // automatic call to ~ints_on_the_heap will free heap memory
+```
+]]
+
+---
+# Resource management with RAII
+
+- This principle is applicable not just for memory management, but in general for *resource management*<br/>
+  Resources might be: Files, Network and Database connections, ...
+
+- For example we can encapsulate the opening and closing of a file using RAII:
+
+.box-90[.fs-90[
+```
+struct file_handle {
+  FILE * file;
+
+  file_handle(const char * filename) {
+    file = fopen(filename, "r");
+    if (!file) { exit(EXIT_FAILURE); }
+  }
+
+  ~file_handle() { fclose(file); }
+};
+typedef struct file_handle file_handle;
+
+int main() {
+  file_handle f("filename"); // call to file_handle(filename) opens file
+  // use f.file
+} // call to ~file_handle() closes file
+```
+]]
+
+- RAII is used everywhere in `C++` for resource management. We will see further examples later in the course
+
+---
+# Modern Memory Management in `C++`
+
+- `C++` provides common data types build with RAII for easy and non-leaking memory management
+
+- If we want to store multiple values of the same type on the heap we should use `std::vector`:
+
+.box-80[.fs-90[
+```
+int main() {
+  std::vector<int> v = {1, 2, 3, 4, 5, 6}; // heap memory is allocated for the numbers
+  // use v
+} // memory on the heap will be freed automatically
+```
+]]
+
+
+
+- If we want to store a single value on the heap we should use one of two "smart" pointers:
+ - `std::unique_ptr` for unique ownership
+ - `std::share_ptr` for shared ownership
+
+- Unique ownership should be the default case where a single variable is *owning* the value on the heap
+
+- Shared ownership should be used in situations where it is not possible to identify a single owner<br/>
+  This is common in multi-threaded applications and we will see examples of this later in the course
+
+---
+# Binary Tree with Smart Pointers
+
+.box-90[.fs-90[
+```
+#include <memory>
+
+struct node {
+  const void * value_ptr;
+  // The parent owns both children uniquely
+  std::unique_ptr<struct node> left_child;
+  std::unique_ptr<struct node> right_child;
+  // Each child knows their parent, but doesn't own it
+  // We use plain pointers for non-owning relationships
+  struct node* parent;
+
+  node(const void * value_ptr_) {
+    value_ptr = value_ptr_;
+    left_child = NULL; right_child = NULL; parent = NULL }
+
+  // The destructors of left/right_child are called automatically and free their heap memory
+  ~node() {   }
+
+  void add_left_child(const void* value_ptr) {
+    // make_unique allocates memory for a node on the heap and calls the node-constructor
+    left_child = std::make_unique<node>(value_ptr); }
+
+  void add_right_child(const void* value_ptr) {
+    right_child = std::make_unique<node>(value_ptr); }
+};
+```
+]]
+
+---
+# Next week
+
+- We are going to discuss a bit more about the ownership model and **transfer of ownership**
+
+- We are going to look at **debugging** and **development tools**
+
+- We will learn how debuggers help us to detect **bugs**
+
+- We will learn how **static and dynamic analysis tools** help us to address problems like memory leaks
+
+---
+name: closing
+background-image: url(../template/images/Closing16x9.jpg)
+class: title-slide, text-white
+count: false
+
+# Systems Programming
+## Lecture 4  .smaller[| 15.smaller[th] of October 2018]
+
+### Michel Steuwer .smaller[| [http://michel.steuwer.info](http://michel.steuwer.info/) | [michel.steuwer@glasgow.ac.uk](mailto:michel.steuwer@glasgow.ac.uk)]
+
+    </textarea>
+    <script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/MathJax.js?config=TeX-AMS_HTML&delayStartupUntil=configured" type="text/javascript"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0-alpha2/katex.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0-alpha2/contrib/auto-render.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0-alpha2/katex.min.css">
+
+    <script>
+    // macros
+    remark.macros['img'] = function (style) {
+        return '<img src="' + this + '" style="' + style + '" />';
+    };
+
+    remark.macros['team-member'] = function (name, style) {
+        return '<div style="position: absolute; ' + style + '"><img src="' + this + '" style="border-radius: 50%;" width="100%" />' + name + '</div>';
+    }
+    </script>
+
+    <script>
+      var renderMath = function() {
+        renderMathInElement(document.body, {delimiters: [
+            {left: "$$", right: "$$", display: true},
+            {left: "$", right: "$", display: false},
+            {left: "\\[", right: "\\]", display: true},
+            {left: "\\(", right: "\\)", display: false},
+        ]});
+      }
+
+      var slideshow = remark.create({
+          ratio: '16:9',
+          highlightLanguage: 'c',
+          highlightStyle: 'solarized-light', // light: 'idea' 'solarized-light', dark: 'monokai'
+          highlightLines: true,
+          highlightSpans: true
+          }); //, renderMath);
+
+      // Setup MathJax
+      MathJax.Hub.Config({ tex2jax: { skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'] } });
+      MathJax.Hub.Configured();
+    </script>
+  </body>
+</html>

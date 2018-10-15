@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Systems Programming</title>
+    <meta charset="utf-8">
+    <style>
+      @import url(../template/lift.css);
+      @import url(../template/glasgow.css);
+      @import url(../template/print.css);
+    </style>
+  </head>
+  <body>
+    <textarea id="source">
+
+name: title
+background-image: url(../template/images/Title16x9.jpg)
+class: title-slide
+count: false
+
+# Systems Programming
+## AVL Trees  .smaller[| 15.smaller[th] of October 2018]
+
+### Michel Steuwer .smaller[| [http://michel.steuwer.info](http://michel.steuwer.info/) | [michel.steuwer@glasgow.ac.uk](mailto:michel.steuwer@glasgow.ac.uk)]
+
+---
+# AVL Trees
+
+- An AVL tree is a *self-balancing binary search tree*
+
+- The `balance` factor is the difference between the height of the left and right subtree:
+
+```Java
+node.balance = height(node.right) - height(node.left);
+```
+
+- A node is *balanced* if the balance is 0, -1, or +1.
+  If the height of left and right subtrees differ at most by one.
+
+- A binary search tree is an *AVL tree* if every node in the tree is balanced
+
+.center[
+AVL tree:<br/>
+![:img width: 30%](https://upload.wikimedia.org/wikipedia/commons/a/ad/AVL-tree-wBalance_K.svg)
+<br/>
+.fs-60[From: https://en.wikipedia.org/wiki/File:AVL-tree-wBalance_K.svg]
+]
+
+---
+# Inserting nodes
+
+- When inserting into an AVL tree we have to *rebalance* the tree if the balancing property is violated
+
+.fs-90[
+```Java
+public boolean insert(int key) {
+    if (root == null) { root = new Node(key, null); return true; } // inserting in empty tree
+
+    Node n = root;
+    while (true) {
+        if (n.key == key) { return false; } // node with same key is already in the tree
+
+        Node parent = n;
+
+        boolean goLeft = n.key > key;
+        n = goLeft ? n.left : n.right;
+
+        if (n == null) { // once we have reached the leafs of the tree we insert
+            if (goLeft) { parent.left = new Node(key, parent);  }
+            else        { parent.right = new Node(key, parent); }
+            rebalance(parent); // now we have to rebalance the parent node!
+            break;       // and exit the tree traversal
+        }
+    }
+    return true;
+}
+```
+]
+
+---
+# Rebalancing
+
+- There are four different types of *rotations* to be performed for different cases
+
+.fs-90[
+```Java
+private void rebalance(Node n) {
+    setBalance(n); // we first compute the balance of the node
+
+    // check if we have violated the balancing property
+    if (n.balance == -2) {          // the left subtree is to high
+        if (height(n.left.left) >= height(n.left.right))   { n = rotateRight(n);         }
+        else                                               { n = rotateLeftThenRight(n); }
+    } else if (n.balance == 2) {    // the right subtree is to high
+        if (height(n.right.right) >= height(n.right.left)) { n = rotateLeft(n);          }
+        else                                               { n = rotateRightThenLeft(n); }
+    }
+
+    // after this node has been rebalanced we work the tree upwards and continue to rebalance
+    if (n.parent != null) { rebalance(n.parent); }
+    else                  { root = n;            }
+}
+```
+]
+
+---
+class: split-60-35
+# Rotating Left
+
+- We are looking at one case `rotateLeft`. The `rotateRight` case is similar
+
+.left-column[
+.fs-90[
+```Java
+private Node rotateLeft(Node x) {
+    Node z = x.right;
+    z.parent = x.parent;
+
+    x.right = z.left;
+
+    if (x.right != null) { x.right.parent = x; }
+
+    z.left = x;
+    x.parent = z;
+
+    if (z.parent != null) {
+        if (z.parent.right == x) { z.parent.right = z; }
+        else                     { z.parent.left  = z; }
+    }
+
+    setBalance(x);
+    setBalance(z);
+    return z;
+}
+```
+]
+]
+
+.right-column[
+.center[
+![:img width: 55%](https://upload.wikimedia.org/wikipedia/commons/7/76/AVL-simple-left_K.svg)
+<br/>
+.fs-50[From: https://en.wikipedia.org/wiki/File:AVL-simple-left_K.svg]
+]
+]
+
+---
+# Combining rotations
+
+- `rotateRightThenLeft`
+
+```Java
+private Node rotateRightThenLeft(Node n) {
+    n.right = rotateRight(n.right);
+    return rotateLeft(n);
+}
+```
+- `rotateLeftThenRight`
+
+```Java
+private Node rotateLeftThenRight(Node n) {
+    n.left = rotateLeft(n.left);
+    return rotateRight(n);
+}
+```
+
+---
+# Deleting nodes
+
+- Rebalancing has also to be performed when deleting nodes
+
+- I leave the details to the Java implementation posted on moodle
+
+---
+name: closing
+background-image: url(../template/images/Closing16x9.jpg)
+class: title-slide, text-white
+count: false
+
+# Systems Programming
+## AVL Trees  .smaller[| 15.smaller[th] of October 2018]
+
+### Michel Steuwer .smaller[| [http://michel.steuwer.info](http://michel.steuwer.info/) | [michel.steuwer@glasgow.ac.uk](mailto:michel.steuwer@glasgow.ac.uk)]
+
+    </textarea>
+    <script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/MathJax.js?config=TeX-AMS_HTML&delayStartupUntil=configured" type="text/javascript"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0-alpha2/katex.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0-alpha2/contrib/auto-render.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0-alpha2/katex.min.css">
+
+    <script>
+    // macros
+    remark.macros['img'] = function (style) {
+        return '<img src="' + this + '" style="' + style + '" />';
+    };
+
+    remark.macros['team-member'] = function (name, style) {
+        return '<div style="position: absolute; ' + style + '"><img src="' + this + '" style="border-radius: 50%;" width="100%" />' + name + '</div>';
+    }
+    </script>
+
+    <script>
+      var renderMath = function() {
+        renderMathInElement(document.body, {delimiters: [
+            {left: "$$", right: "$$", display: true},
+            {left: "$", right: "$", display: false},
+            {left: "\\[", right: "\\]", display: true},
+            {left: "\\(", right: "\\)", display: false},
+        ]});
+      }
+
+      var slideshow = remark.create({
+          ratio: '16:9',
+          highlightLanguage: 'c',
+          highlightStyle: 'solarized-light', // light: 'idea' 'solarized-light', dark: 'monokai'
+          highlightLines: true,
+          highlightSpans: true
+          }); //, renderMath);
+
+      // Setup MathJax
+      MathJax.Hub.Config({ tex2jax: { skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'] } });
+      MathJax.Hub.Configured();
+    </script>
+  </body>
+</html>

@@ -107,6 +107,8 @@ a {
 .bigger .remark-code { font-size: 1.25em; }
 .big    .remark-code { font-size: 1.5em;  }
 
+.fs-30 { font-size: 30%; }
+.fs-40 { font-size: 40%; }
 .fs-50 { font-size: 50%; }
 .fs-55 { font-size: 55%; }
 .fs-60 { font-size: 60%; }
@@ -158,6 +160,8 @@ a {
 .split-45-45 .right-column {width: 45%}
 .split-50-45 .left-column {width: 50%}
 .split-50-45 .right-column {width: 45%}
+.split-60-35 .left-column {width: 60%}
+.split-60-35 .right-column {width: 35%}
 
 .safe-space p {margin-top: 5px; margin-bottom: 5px}
 
