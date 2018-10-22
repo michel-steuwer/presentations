@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Systems Programming</title>
+    <meta charset="utf-8">
+    <style>
+      @import url(../template/lift.css);
+      @import url(../template/glasgow.css);
+      @import url(../template/print.css);
+    </style>
+  </head>
+  <body>
+    <textarea id="source">
+
+name: title
+background-image: url(../template/images/Title16x9.jpg)
+class: title-slide
+count: false
+
+# Systems Programming
+## Lecture 5  .smaller[| 22.smaller[th] of October 2018]
+
+### Michel Steuwer .smaller[| [http://michel.steuwer.info](http://michel.steuwer.info/) | [michel.steuwer@glasgow.ac.uk](mailto:michel.steuwer@glasgow.ac.uk)]
+
+---
+# Recap from last week: Ownership
+
+- To organise resource and memory management we adopt the concept of *ownership*
+
+- In `C++` we tie the management of a resource to the lifetime of a variable on the stack.<br/>
+  The allocation of the resource (e.g. the `malloc` call) is done when we create the variable.<br/>
+  The deallocation of the resource (e.g. the `free` call) is done when the variable is destroyed.
+
+.box-80[.fs-80[
+```
+int main() {
+  std::vector<int> v = {1, 2, 3, 4, 5, 6}; // heap memory is allocated for the numbers
+  // use v
+} // memory on the heap will be freed automatically
+```
+]]
+
+- In `C++` this idiom is implemented by `struct` data types with two *member functions* (called methods in Java):
+  - The *constructor* which is called when creating values
+  - The *destructor* which is called when a variable of this type reaches the end of its lifetime
+
+- `C++` provides common data types for easy and non-leaking memory management:
+ - `std::vector` for ownership of multiple values
+ - `std::unique_ptr` for unique ownership of a single value
+ - `std::share_ptr` for shared ownership of a single value
+
+---
+# .fs-90[Directed Acyclic Graph (DAG) with Smart Pointers]
+
+.box-90[.fs-90[
+```C
+#include <memory>
+#include <vector>
+
+struct node {
+    const char * value;
+    // every node can have multiple outgoing edges
+    // a node "owns" the nodes it point to
+    // this is a shared ownership as a single node can have multiple nodes pointing to it
+    std::vector< std::shared_ptr<node> > edges_to;
+    // constructor
+    node(const char * v) { value = v; }
+    // add a new connection to the DAG
+    void add_edge_to(std::shared_ptr<node> n) { edges_to.push_back(n); }
+}; // we do not need a custom destructor as the shared_ptr manages its memory automatically
+
+// create a diamond-shaped DAG 
+std::shared_ptr<node> create_diamond() {
+  std::shared_ptr<node> a = std::make_shared<node>("a");
+  a->add_edge_to(std::make_shared<node>("b"));
+  a->add_edge_to(std::make_shared<node>("c"));
+  std::shared_ptr<node> d = std::make_shared<node>("d");
+  a->edges_to[0]->add_edge_to(d);
+  a->edges_to[1]->add_edge_to(d);
+  return a;
+}
+```
+]]
+
+---
+# Ownership transfer
+
+- When modeling unique ownership we should use a `std::unique_ptr`
+
+- For example we can model a tree where the parent is uniquely responsible for its children like this:
+
+.box-70[.fs-80[
+```C
+struct node {
+    const char * value;
+    std::vector< std::unique_ptr<node> > children;
+
+    node(const char * v) { value = v; }
+};
+```
+]]
+
+- When we add a member function to add children we receive an error:
+
+.box-90[.fs-90[
+```C
+struct node { /* ... */ void add_child(std::unique_ptr<node> n) { children.push_back(n); } };
+```
+].fs-80[
+```
+memory:1805:31: error:
+call to implicitly-deleted copy constructor of 'std::__1::unique_ptr<node, std::__1::default_delete<node> >'
+```
+]]
+
+- What are we trying to achieve here?<br/>
+  The ownership should be unique, but if we make a copy of a unique pointer then clearly two variables<br/>
+  (the original and the copy) hold ownership. The compiler is preventing that this happens!<br/>
+  .center[ Instead we have to explicitly *transfer the ownership*! ]
+
+
+---
+# Ownership transfer with .fs-80[`std::move`]
+
+- To transfer the ownership of a unique resource such as `std::unique_ptr` we use `std::move`:
+
+.box-90[.fs-90[
+```C
+void add_child(std::unique_ptr<node> n) { children.push_back(`std::move(n)`); }
+```
+]]
+
+- The ownership transfer signals that the old variable is no longer responsible to manage the resource:
+
+.box-90[.fs-90[
+```C
+void main() {
+  std::unique_ptr<node> a_ptr = std::make_unique<node>("a");
+    {
+      std::unique_ptr<node> b_ptr = std::make_unique<node>("b");
+      a_ptr->add_child(`std::move(b_ptr)`); // ownership is transferred here
+    } // lifetime of b_ptr ends => nothing happens (b_ptr doesn't own anything anymore)
+} // lifetime of a_ptr ends => memory allocated for a and b will be freed
+```
+]]
+
+- It is forbidden to access the value of a variable for which ownership has been transferred
+
+.box-90[.fs-90[
+```C
+    std::unique_ptr<node> b_ptr = std::make_unique<node>("b");
+    a_ptr->add_child(`std::move(b_ptr)`);
+    b_ptr->value; // BAD IDEA
+```
+]]
+
+---
+class: split-45-50
+# Bugs and finding them 
+
+.left-column[
+- Software development is not free of errors
+
+- We call these software errors *bugs*
+
+- We will investigate a number of tools to help us identify and understand bugs:
+  - **Debuggers**, run a program in a controlled environment where we can investigate its execution
+
+  - **Static analysis** tools, reason about a program's behaviour without running it
+
+  - **Dynamic analysis** tools, add instructions to a program to detect bugs at runtime
+]
+
+.right-column[
+![:img width: 100%](images/bug.jpg)<br/>
+.center[.fs-80[Logbook of Grace Hoppers team in 1947]]
+]
+
+---
+# Debugger
+
+- The two popular debuggers for `C/C++` programs `GDB` and `LLDB` are used almost exactly the same
+
+1. We need to compile the program with the .boxed[`-g`] flag which adds debug information into the binary
+
+2. Instead of executing the program normally we start debugger and load the program:
+.box-80[.fs-90[
+```C
+$ ./program arg1 arg2            ; "Run program normally"
+$ gdb  --arg ./program arg1 arg2 ; "Load program in GDB debugger"
+$ lldb --    ./program arg1 arg2 ; "Load program in LLDB debugger"
+```
+]]
+
+3. Inside the debugger we start the execution with the .boxed[`run`] command:
+.box-80[.fs-90[
+```C
+(lldb) run
+```
+]]
+
+- A good list of commands available in the `GDB` and `LLDB` debuggers is available here:<br/> https://lldb.llvm.org/lldb-gdb.html
+
+- To exit run the .boxed[`quit`] command inside the debugger
+
+---
+# Segmentation fault
+
+- This runtime error message is one of the most common in systems programming:
+
+.box-80[.fs-90[
+```C
+[1]    83437 segmentation fault  ./program
+```
+]]
+
+- A *segmentation fault* is raised by the hardware notifying the operating system that your program has attempted to access a restricted area of memory
+
+- The operating system will then immediately terminate your program<br/>
+  .smaller[In Operating Systems you will learn how it is possible to catch the segmentation fault signal and handle it.]
+
+- The most common examples of programs with segfault are:
+  - **Dereferencing a `NULL` pointer**
+  - **Writing to read-only memory**
+  - **A buffer overflow**, i.e. accessing memory outside of an allocated buffer
+  - **A stack overflow**, often triggered by a recursion without a base case
+
+---
+# Where did my segmentation fault come from?
+
+- To find the line in a program that triggered the segmentation fault we load it in the debugger and run it:
+
+.box-80[.fs-80[
+```C
+$ lldb -- ./program 12345
+(lldb) run
+Process 85058 launched: './program' (x86_64)
+2018-10-21 20:56:00.106714+0100 program[85058:12827554] detected buffer overflow
+Process 85058 stopped
+  ...
+```
+]]
+
+- The debugger has now stopped the execution.<br/>
+  Using the .boxed[`bt`] (*backtrace*) command we investigate the calls leading to the segfault:
+
+.box-80[.fs-80[
+```C
+(lldb) bt
+ * thread #1, queue = 'com.apple.main-thread', stop reason = signal SIGABRT
+  * frame #0: 0x00007fff76d1ab86 libsystem_kernel.dylib`__pthread_kill + 10
+  ...
+    frame #6: 0x00007fff76ca8e84 libsystem_c.dylib`__strcpy_chk + 8
+    `frame #7: 0x0000000100000eaf program overflow(argc=2, argv=0x00007ffeefbff300) at program.c:35`
+    frame #8: 0x0000000100000efb program`main(argc=2, argv=0x00007ffeefbff3c8) at program.c:42
+    frame #9: 0x00007fff76bdc085 libdyld.dylib`start + 1
+    frame #10: 0x00007fff76bdc085 libdyld.dylib`start + 1
+```
+]]
+
+- Here *frame 7* shows us the file (`program.c`) and line (35) which triggered the segfault in our code
+
+---
+# Breakpoints and GUI for debugging
+
+
+- *Breakpoints* are points at which the execution is stopped and we can investigate the state of the execution
+
+- Setting breakpoints in the command line debugger is tedious (but totally possible)
+
+- The `Visual Studio Code` editor (but also others, like Atom) provide a GUI for the `GDB` or `LLDB` debugger
+
+.center[
+![:img width: 50%](https://code.visualstudio.com/assets/docs/editor/debugging/debugging_hero.png)
+]
+
+- Detailed instructions for the configuration can be found here: https://code.visualstudio.com/docs/editor/debugging
+
+---
+# Static Analysis
+
+- A static analysis reasons about the code without executing it
+
+- The compiler performs some static analysis every time you compile your code, e.g. type checking
+
+- It is good practice to enable all warnings (`-Wall`) and make warnings errors (`-Werror`)<br/>
+  This way the compiler can be most helpful in detecting bugs before your program is executed
+
+- Some static analysis is too expensive to perform in every build<br/>
+  Other static analysis enforces a particular coding guideline
+
+- These type of static analysis is available with special flags or in separate tools
+
+- We are going to use the tools provided by the `clang` compiler
+
+- We invoke the static analyzer using a  flag and specifying the output format of the report:<br/><br/>
+  .center[.boxed[`clang --analyze --analyzer-output html program.c`]]
+
+---
+# Clang static analyzer report
+
+- The tool generates a report explaining the potential bug
+
+<iframe width="100%" height="60%" src="4.c.report.html"></iframe>
+
+- Here has the tool reported a "garbage value" which in this case leads to undefined outcome for a `if`-branch
+
+---
+# `clang-tidy`
+
+- `clang-tidy` is a *linter* .fs-60[(the name comes from the first UNIX tool to perform static analysis on C).]<br/>
+  It is invoked like a compiler accepting the same flags as `clang` specified after two dashes: `--`
+
+- A series of *checks* can be en- and disabled. Here we enable the checks for *readability*:
+
+.box-90[.fs-80[
+```
+$ clang-tidy -checks="readability-*" 6.c -- -Wall -Werror
+/Users/michel/Desktop/examples/6.c:2:16: warning: pointer parameter 'p' can be pointer to const
+ [readability-non-const-parameter]
+void test(int *p) {
+          ~~~  ^
+          const
+/Users/michel/Desktop/examples/6.c:4:9: warning: statement should be inside braces 
+ [readability-braces-around-statements]
+  if (p)
+        ^
+         {
+```
+]]
+
+- We are suggested to put braces around the branch of an `if`-statement and to use `const`
+
+- `clang-tidy` is a flexible tool that allows to enforce coding guidelines and to modernize source code
+
+- It is possible to extend `clang-tidy` by writing your own checks
+
+- Detailed information for `clang-tidy` are available here: http://clang.llvm.org/extra/clang-tidy/
+
+
+---
+# Dynamic Analysis Tools
+
+- There exists a family of bug detection tools which use dynamic analysis
+
+- These tools need the program to run and can only detect bugs which are<br/>
+  encountered during the execution of a particular test input
+
+- The `clang` project calls these tools *sanitizers*. The most important are:
+  - `AddressSanitizer` - a memory error detector
+  - `MemorySanitizer` - a detector of uninitialized reads
+  - `LeakSanitizer` - a memory leak detector
+  - `UndefinedBehaviorSanitizer` - a detector of undefined behaviour
+
+- We will later in the course use:
+  - `ThreadSanitizer` - a data race detector
+
+---
+# Address Sanitizer
+
+- Address Sanitizer is a memory error detector for detecting:
+ - Out-of-bounds accesses
+ - Use-after-free
+ - Double free
+
+- By enabling this tool `clang` will insert instructions in the program to monitor every single memory access
+
+- This slows down the execution by about 2x. The similar tool `valgrind` has often a slowdown of 20-100x!
+
+- These flags enable address sanitizer:
+
+  .center[.boxed[.fs-80[`clang -fsanitize=address -fno-omit-frame-pointer -O1 -g -Wall -Werror program.c -o program`]]]
+
+- The .boxed[`-fno-omit-frame-pointer`] flag produces a readable call stack and `-O1` enables basic optimizations.
+
+- The compiler will produce a binary as usual which we execute: .boxed[.fs-80[`./program`]]
+
+- Address Sanitizer has found [hundreds of bugs](https://github.com/google/sanitizers/wiki/AddressSanitizerFoundBugs) in large scale software (e.g. Chromium and Firefox)
+
+---
+# Address Sanitizer output
+
+- The output reports a `heap-use-after-free on address 0x614000000044` and provides information where the memory was freed (line 5) and allocated (line 4)
+
+.center[
+![:img width:80%](images/AddressSanitizer.png)
+]
+
+---
+# Memory Sanitizer
+
+- Memory sanitizer detects uninitialized reads to memory:
+
+.box-90[.fs-90[
+```
+% cat umr.c
+#include <stdlib.h>
+#include <stdio.h>
+
+int main(int argc, char** argv) {
+  int* a = malloc(sizeof(int)*10);
+  a[5] = 0;
+  if (a[argc])
+    printf("xx\n");
+  return 0;
+}
+
+% clang -fsanitize=memory -fno-omit-frame-pointer -g -O2 umr.cc
+% ./a.out
+WARNING: MemorySanitizer: use-of-uninitialized-value
+    #0 0x7f45944b418a in main umr.c:6
+    #1 0x7f45938b676c in __libc_start_main libc-start.c:226
+```
+]]
+
+- This tool is under active development and currently only available for linux 
+
+---
+# Leak Sanitizer
+
+- Leak sanitizer detects memory leaks, that is memory which hasn't been freed at the end of the program:
+
+.box-90[.fs-90[
+```
+$ cat memory-leak.c
+#include <stdlib.h>
+void *p;
+int main() {
+  p = malloc(7);
+  p = 0; // The memory is leaked here.
+  return 0;
+}
+% clang -fsanitize=address -g memory-leak.c
+% ./a.out
+==23646==ERROR: LeakSanitizer: detected memory leaks
+Direct leak of 7 byte(s) in 1 object(s) allocated from:
+    #0 0x4af01b in __interceptor_malloc /projects/compiler-rt/lib/asan/asan_malloc_linux.cc:52:3
+    #1 0x4da26a in main memory-leak.c:4:7
+    #2 0x7f076fd9cec4 in __libc_start_main libc-start.c:287
+SUMMARY: AddressSanitizer: 7 byte(s) leaked in 1 allocation(s).
+```
+]]
+
+- This tool is also under active development and marked as experimental
+
+---
+# Undefined Behavior
+
+- What is undefined behaviour?
+
+- For certain operations the C standard demands no particular behaviour.<br/>
+  These are typically cases which are considered bugs, e.g. dereferencing a `null` pointer.
+
+- It is expensive to check every time a pointer is dereferenced if the operation is valid.<br/>
+  Because the compiler does not have to ensure a particular behaviour for `null` pointers,<br/>
+  it can *assume* that the programmer has ensured that the pointer is not `null`.
+
+- Undefined behaviour is therefore crucial for fast code, but makes detection of bugs much harder, as it is not guaranteed that a bug will result in a program crash
+
+- A good introduction to undefined behaviour is this series of blog posts:<br/>
+  [What Every C Programmer Should Know About Undefined Behavior](http://blog.llvm.org/2011/05/what-every-c-programmer-should-know.html)
+
+---
+# Undefined Behavior Sanitizer
+
+- Undefined behavior sanitizer detects various types of undefined behaviour
+
+- Here an integer overflow is detected:
+
+.box-90[.fs-90[
+```
+% cat intOverflow.c
+int main(int argc, char **argv) {
+  int k = 0x7fffffff; // this is the largest possible signed int value ...
+  k += argc;          // ... this will produce an integer overflow
+  return 0;
+}
+
+% clang -fsanitize=undefined -Wall -Werror intOverflow.c -o intOverflow
+
+% ./intOverflow
+intOverflow.c:3:5: runtime error: signed integer overflow: 2147483647 + 1 cannot
+ be represented in type 'int'
+```
+]]
+
+
+---
+# Next week
+
+- **There is no lecture next week!**
+
+- You are invited to work on your coursework in the lab
+
+- In two weeks, we will start looking at threads and how to write multi-threaded applications
+
+---
+name: closing
+background-image: url(../template/images/Closing16x9.jpg)
+class: title-slide, text-white
+count: false
+
+# Systems Programming
+## Lecture 5  .smaller[| 22.smaller[th] of October 2018]
+
+### Michel Steuwer .smaller[| [http://michel.steuwer.info](http://michel.steuwer.info/) | [michel.steuwer@glasgow.ac.uk](mailto:michel.steuwer@glasgow.ac.uk)]
+
+    </textarea>
+    <script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/MathJax.js?config=TeX-AMS_HTML&delayStartupUntil=configured" type="text/javascript"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0-alpha2/katex.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0-alpha2/contrib/auto-render.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0-alpha2/katex.min.css">
+
+    <script>
+    // macros
+    remark.macros['img'] = function (style) {
+        return '<img src="' + this + '" style="' + style + '" />';
+    };
+
+    remark.macros['team-member'] = function (name, style) {
+        return '<div style="position: absolute; ' + style + '"><img src="' + this + '" style="border-radius: 50%;" width="100%" />' + name + '</div>';
+    }
+    </script>
+
+    <script>
+      var renderMath = function() {
+        renderMathInElement(document.body, {delimiters: [
+            {left: "$$", right: "$$", display: true},
+            {left: "$", right: "$", display: false},
+            {left: "\\[", right: "\\]", display: true},
+            {left: "\\(", right: "\\)", display: false},
+        ]});
+      }
+
+      var slideshow = remark.create({
+          ratio: '16:9',
+          highlightLanguage: 'c',
+          highlightStyle: 'solarized-light', // light: 'idea' 'solarized-light', dark: 'monokai'
+          highlightLines: true,
+          highlightSpans: true
+          }); //, renderMath);
+
+      // Setup MathJax
+      MathJax.Hub.Config({ tex2jax: { skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'] } });
+      MathJax.Hub.Configured();
+    </script>
+  </body>
+</html>
