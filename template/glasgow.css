@@ -13,7 +13,14 @@ h1, h2, h3 {
 
 .remark-code, .remark-inline-code { font-family: 'Source Code Pro', 'Fira Mono', monospace; }
 
-.remark-code-span-highlighted { padding: 0 2px 0 2px; }
+.remark-code-span-highlighted {
+  margin: 0px 0px 0px -4px;
+  padding: 0 2px 0 2px;
+  background-color: transparent;
+  border: 2px;
+  border-style: solid;
+  border-color: black;
+ }
 
 .remark-slide-content {
   background-size: contain;
