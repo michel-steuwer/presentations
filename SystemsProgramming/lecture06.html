@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Systems Programming</title>
+    <meta charset="utf-8">
+    <style>
+      @import url(../template/lift.css);
+      @import url(../template/glasgow.css);
+      @import url(../template/print.css);
+    </style>
+  </head>
+  <body>
+    <textarea id="source">
+
+name: title
+background-image: url(../template/images/Title16x9.jpg)
+class: title-slide
+count: false
+
+# Systems Programming
+## Lecture 6  .smaller[| 4.smaller[th] of November 2018]
+
+### Michel Steuwer .smaller[| [http://michel.steuwer.info](http://michel.steuwer.info/) | [michel.steuwer@glasgow.ac.uk](mailto:michel.steuwer@glasgow.ac.uk)]
+
+---
+# Recap of lectures so far
+
+- In the introduction to systems programming, we have learned so far that:
+
+  - **data types** give bit representations in memory a meaning
+
+  - **structs** allow us to implement custom data structures (like link lists or trees)
+
+  - every variable is stored at a fix location **memory**
+
+  - a **pointer** is a variable storing the address of a memory location
+
+  - memory on the **stack** is automatically managed but memory on the **heap** must be managed manually
+
+  - to organise resource and memory management we should think about **ownership**
+
+  - in C++ ownership is implemented by tying the resource management to the **lifetime** of a stack variable
+
+  - there exist a set of **smart pointers** and **containers** for easy and non-leaking memory management 
+
+  - **debuggers**, **static** and **dynamic analysis tools** help to detect and fix bugs
+
+- In the second part of the course we are looking into **concurrent systems programming**
+
+---
+# Concurrent Systems Programming
+
+- First question: *What is concurrency?*
+
+**concurrency** | kənˈkʌr(ə)ns |
+
+The ability of different program parts to be executed out-of-order or in partial order, without affecting the result.
+
+- There are many different methods to enable concurrent programs.<br/>
+  We distinguish between two classes describing how concurrent components communicate:
+
+      - *Shared memory* communication:<br/>
+        Shared memory locations are read and modified to communicate between concurrent components.
+        This is needs some form of coordination to ensure that the communications happens safely.<br/>
+        **We will look at explicit programming with *threads* and use shared memory communication.**
+
+      - *Message passing* communication:<br/>
+        Message-passing concurrency tends to be far easier to reason about than shared-memory concurrency, and is typically considered a more robust form of concurrent programming.
+        Examples of message passing systems are the *actor model* implemented in *Erlang* or *CSP*-style communication in Go.<br/>
+        **This will be discussed in the *Distributed and Parallel Technologies H/M* course**
+
+
+---
+# Concurrency vs. Parallelism
+
+- How is concurrency different from *parallelism*?
+
+
+.box-90[.fs-90[
+```text
+ We make a clean distinction between Concurrency and Parallelism. `Concurrency is a` 
+ `_programming paradigm_`, wherein threads are used typically for dealing with multiple
+ asynchronous events fromm the environment, or for structuring your program as a
+ collection of interacting agents. `Parallelism`, on the other hand, `is just about`
+ `making your programs go faster`. You shouldn't need threads to do parallelism, because
+ there are no asynchronous stimuli to respond to. It just so happens that it's possible
+ to run a concurrent program in parallel on a multiprocessor, but that's just a bonus.
+ I guess the main point I'm making is that to make your program go faster, you shouldn't
+ have to make it concurrent. Concurrent programs are hard to get right, parallel programs
+ needn't be.
+```
+.fs-80[
+[Simon Marlow on the Haskell-cafe mailing list](https://mail.haskell.org/pipermail/haskell-cafe/2008-September/047312.html)
+]]]
+
+<br/>
+
+.box-90[.fs-90[
+```text
+ But when people hear the word `concurrency` they often think of `parallelism`, a
+ related but quite distinct concept. In programming, `concurrency is the composition`
+ `of independently executing processes`, while `parallelism is the simultaneous`
+ `execution of (possibly related) computations`. Concurrency is about dealing with
+ lots of things at once. Parallelism is about doing lots of things at once.
+```
+.fs-80[
+[Andrew Gerrand on the Go blog](https://blog.golang.org/concurrency-is-not-parallelism)
+]]]
+
+
+---
+class: split-80
+# Processes vs. Threads
+
+.left-column[
+- Every C program we have written is executed as a *process*
+
+- Multiple processes can be executed simultaneously
+
+- Each process has its own memory *address space*
+
+- The operating system will ensure that processes can not access memory of another!
+
+<br/>
+
+- A *thread* of execution is an independent sequence of program instructions
+
+- Multiple threads can be executed simultaneously 
+
+- A process can have multiple threads sharing the *same address space* of the process
+
+- We will use threads to implement concurrent programs
+]
+
+.right-column[.center[
+![:img width: 70%; margin-top:-50px](images/processes.png)
+<br/><br/>
+![:img width: 50%](images/threads.png)
+]]
+
+---
+# Thread implementations
+
+- There exist thread implementations in almost all programming languages
+
+- We will use the `C pthread` library and in the next lecture we will use `C++ threads`
+
+- Many threading implementations are conceptually very similar:
+
+  - A thread is *created* and starts executing a specifying function
+
+  - A thread terminates either by explicitly calling *exit* or when the specifying functions terminates
+
+  - Communication between threads is performed by modifying the state of *shared variables*
+
+---
+# POSIX Threads
+
+- POSIX Threads (short `pthreads`) is the most commonly used threading implementation for `C`
+
+- To use it we need to .boxed[`#include <pthread.h>`] and specify a flag to the compiler .boxed[`-lpthread`]
+
+.box-80[.fs-80[
+```C
+ #include <stdio.h>
+ #include <stdlib.h>
+ `#include <pthread.h>`
+ #include <assert.h>
+
+ void * PrintHelloWorld(void*) {
+     printf("Hello World from a thread!\n");
+     return NULL;
+ }
+
+ int main() {
+     `pthread_t thread;`
+
+     int error = `pthread_create(&thread, NULL, PrintHelloWorld, NULL)`;
+     assert(error == 0);
+     printf("Created thread\n");
+
+     error = `pthread_join(thread, NULL);`
+     assert(error == 0);
+ }
+```
+]]
+
+.box-80[.fs-80[
+```C
+clang -Wall -Werror program.c `-lpthread` -o program
+```
+]]
+
+---
+# Creating a thread
+
+- Threads are created with the `pthread_create` function
+
+```
+int pthread_create(pthread_t *thread,
+                   const pthread_attr_t *attr,
+                   void *(*start_routine)(void*),
+                   void *arg);
+```
+
+- It takes four arguments:
+  1. A pointer to a memory location of type `pthread_t`. The variable at that location identifies the thread.
+  2. Thread attributes which set properties such as scheduling policies or stack size.<br/>
+     Passing `NULL` results in default attributes.
+  3. A function pointer to the `start_routine`.<br/>
+     This function takes a single argument of type `void*` and returns a value of type `void*`.
+  4. The argument that is passed to `start_routine`.
+
+- It returns `0` if the thread is created successfully or a non-zero error code.
+
+- Passing pointers to and from `start_routine` allows to pass arbitrary data around.<br/>
+  It also requires care to ensure that the memory locations pointed to have appropriate lifetimes.
+
+
+---
+# Waiting for another thread to finish
+
+- To wait for another thread to finish we use `pthread_join`
+
+```
+int pthread_join(pthread_t thread, void **value_ptr);
+```
+
+- It takes two arguments:
+  1. A thread identifier.
+  2. A pointer to a memory location of type `void*`.<br/>
+     The return value of the `start_routine` passed to `pthread_create` will be copied to this location.
+
+- It returns `0` on success and a non-zero error code otherwise.
+
+- Example, of returning a single int value from a thread:
+
+```
+int* return_value;
+int error = pthread_join(thread, (void**)&return_value);
+assert(error == 0);
+if (return_value) { printf("return_value: \n", *return_value); }
+// maybe: free(return_value);
+```
+
+---
+# Mutual Exclusion - Introduction
+
+- *Edsger Dijkstra* proposed the problem of *mutual exclusion* first in 1965
+
+- This problem (and its solution) is attributed to be the beginning of the computer science of concurrency
+
+- What is the problem that mutual exclusion is solving?
+
+  - Consider a singly linked list:
+  ![:img width: 350px; vertical-align: middle](images/linked_list_step1.png)
+
+  - Two threads simultaneously start removing the elements from the list.<br/>
+    The first thread removes `b` by moving the `next` pointer of `a` to `c`:<br/>
+  ![:img width: 350px; vertical-align: middle](images/linked_list_step2.png)<br/>
+    The second thread removes `c` by moving the `next` pointer of `b` to `d`:<br/>
+  ![:img width: 350px; vertical-align: middle](images/linked_list_step3.png)
+
+  - The resulting list still contains node `c`. 
+
+- We can avoid this problem by ensuring that simultaneous updates to the same part of the list cannot occur
+
+
+---
+# Mutual Exclusion
+
+- *Problem*: how to synchronize N threads, each with a *critical section* of code, so that these properties hold:
+  1. Mutual Exclusion: No two critical sections are executed concurrently.
+  2. Deadlock Freedom: If threads are waiting to execute their critical section, then one of them will eventually execute its critical section.
+
+- Pthreads provides a `mutex` (also called a `lock`) to ensure mutual exclusion.
+
+- Threads must explicitly protect their critical sections using `lock()` and `unlock()` calls
+
+.box-90[.fs-90[
+```
+pthread_mutex_t mutex;
+
+int main() {
+  int error = pthread_mutex_init(&mutex, NULL);
+  //...
+  error = pthread_mutex_destroy(&mutex);
+}
+
+void * thread1(void * arg) {                void * thread2(void * arg) {
+  pthread_mutex_lock(&mutex);                 pthread_mutex_lock(&mutex);
+  // critical section of thread 1             // critical section of thread 2
+  pthread_mutex_unlock(&mutex);               pthread_mutex_unlock(&mutex);
+}                                           }
+```
+]]
+
+---
+# Race Conditions
+
+- A *race condition* occurs when the result of a computation depends on the sequence in which threads execute 
+
+- Race conditions are (almost) always problematic
+
+- When using shared memory communication we use `mutex` or similar synchronisation mechanisms to ensure that race conditions do not occur
+
+- This is very tricky in large practical systems
+
+- We will learn higher level synchronisation constructs that are easier to use and also prevent race conditions
+
+---
+# Condition variables
+
+- In concurrent systems a component is often waiting for a condition to become true: e.g. *work to come in* or *resources to become available*
+
+- A thread can constantly check if the condition is true (while ensuring mutual exclusion)
+
+.box-90[
+```
+pthread_mutex_lock(&m);
+while(!cond) { pthread_mutex_unlock(&m); /* wait */ pthread_mutex_lock(&m); } 
+```
+]
+
+- This is called *busy waiting* and a bad practise: we waist CPU clock cycles doing nothing
+
+- Better is a design where a thread is notified by another thread when the condition has changed
+
+- For this we use *condition variables*
+
+- It is important to distinguish between the *condition itself* we are interested in (e.g. is a list empty) and *condition variables* which are a synchronisation mechanism across threads
+
+---
+class: split-45-45
+# Tea maker with busy waiting
+
+.fs-90[
+```
+pthread_mutex_t m;
+bool teaIsReady = false;
+```
+]
+
+.left-column[.fs-90[
+```
+void *me(void* arg) { (void)arg;
+  printf("Me: Waiting for my tea ...\n");
+  pthread_mutex_lock(&m);
+  while (!teaIsReady) {
+    pthread_mutex_unlock(&m);
+    printf("Me: (Unamused) // do nothing\n");
+    pthread_mutex_lock(&m);   }
+  pthread_mutex_unlock(&m);
+  printf("Me: (Happy) ... finished waiting.\n");
+  return NULL; }
+```
+]]
+
+.right-column[.fs-90[
+```
+void *teaRobot(void* arg) { (void) arg;
+  printf("  Tea Robot: Making tea ...\n");
+    
+  usleep(randInt());
+
+  pthread_mutex_lock(&m);
+  teaIsReady = true;
+  pthread_mutex_unlock(&m);
+
+  printf("  Tea Robot: Done!\n");
+  return NULL; }
+```
+]]
+
+<div style="clear: both"></div>
+
+.fs-90[
+```
+int main() {
+  pthread_t t1; pthread_t t2; int err;
+  err = pthread_mutex_init(&m, NULL);               assert(err == 0);
+  err = pthread_create(&t1, NULL, me, NULL);        assert(err == 0); 
+  err = pthread_create(&t2, NULL, teaRobot, NULL);  assert(err == 0);
+  err = pthread_join(t1, NULL); assert(err == 0);   err = pthread_join(t2, NULL); assert(err == 0);
+        pthread_mutex_destroy(&m); }
+```
+]
+
+---
+class: split-45-45
+# Tea maker with condition variables
+
+.fs-90[
+```
+pthread_mutex_t m;       `pthread_cond_t cv;`
+bool teaIsReady = false;
+```
+]
+
+.left-column[.fs-90[
+```
+void *me(void* arg) { (void)arg;
+  pthread_mutex_lock(&m);
+  `while (!teaIsReady)` {
+    printf("Me: Waiting for my tea ...\n");
+    `pthread_cond_wait(&cv, &m);`   }
+
+  printf("Me: (Happy) ... finished waiting.\n");
+  printf("Me: Is the tea really finished? %s\n",
+          teaIsReady ? "Yes" : "No");
+  return NULL; }
+```
+]]
+
+.right-column[.fs-90[
+```
+void *teaRobot(void* arg) { (void) arg;
+  printf("  Tea Robot: Making tea ...\n");
+  usleep(randInt());
+  pthread_mutex_lock(&m);
+  teaIsReady = true;
+  pthread_mutex_unlock(&m);
+  `pthread_cond_signal(&cv);`
+  printf("  Tea Robot: Done!\n");
+  return NULL; }
+```
+]]
+
+<div style="clear: both"></div>
+
+.fs-90[
+```
+int main() {
+ pthread_t t1; pthread_t t2; int err;
+ err = pthread_mutex_init(&m, NULL); assert(err == 0); err = `pthread_cond_init(&cv, NULL)`; assert(err == 0);
+ err = pthread_create(&t1, NULL, me, NULL);        assert(err == 0); 
+ err = pthread_create(&t2, NULL, teaRobot, NULL);  assert(err == 0);
+ err = pthread_join(t1, NULL); assert(err == 0);   err = pthread_join(t2, NULL); assert(err == 0);
+       `pthread_cond_destroy(&cv)`; pthread_mutex_destroy(&m); }
+```
+]
+
+---
+# Condition variables
+
+- `pthread_cond_wait(&cv, &m)` must be called with a locked mutex `m`<br/>
+   It simultaneously releases the mutex *and* puts the executing thread to sleep.
+
+- `pthread_cond_signal(&cv)` wakes a thread sleeping and waiting on the condition variable
+
+- It is important that the waiting thread checks the condition again *after* it has been awaken:
+
+```
+pthread_mutex_lock(&m);
+while (!cond) {
+  pthread_cond_wait(&cv, &m);
+}
+```
+
+- The `while` is essential as there is no guarantee that the condition `cond` has actually been changed
+
+- When awaken from a `pthread_cond_wait(&cv, &m)` the thread obtains the mutex again
+
+---
+class: split-50
+# Bounded Buffer
+
+.right-column[
+![:img width: 450px](images/boundedBuffer.png)
+]
+
+- Problem first proposed by Dijkstra in 1972
+
+- A bounded buffer is a buffer with a fixed size
+
+- *Producers* insert elements into the buffer
+
+- *Consumers* remove elements from the buffer
+
+- We have to ensure that:
+  - *producers* wait when the buffer is full.
+  - *consumers* wait when the buffer is empty.
+  - threads resume work when space or data is available again.
+
+- We can use condition variables to achieve this!
+
+- The bounded buffer is an example of a *monitor* - an object that allows safe access to a variable (the buffer).
+
+- For a monitor all of its associated functions (`addItem`, `removeItem`) are executed with mutual exclusion
+
+
+---
+# Bounded Buffer Monitor Implementation
+
+.box-90[.fs-90[
+```
+struct BoundedBuffer {
+  int start; int end; int size; int* buffer;
+  pthread_mutex_t m;
+  pthread_cond_t add;
+  pthread_cond_t remove;
+};
+typedef struct BoundedBuffer BoundedBuffer;
+
+BoundedBuffer * createBoundedBuffer(int size) { ... }
+           void destroyBoundedBuffer(BoundedBuffer * bb) { ... }
+           void addItem(BoundedBuffer * bb, int item) { ... }
+            int removeItem(BoundedBuffer * bb) { ... }
+
+void * producer(void * arg) { ... }
+void * consumer(void * arg) { ... }
+
+int main() {
+    pthread_t t1; pthread_t t2; int err;
+    BoundedBuffer * bb = createBoundedBuffer(4);
+
+    err = pthread_create(&t1, NULL, consumer, bb); assert(err == 0);
+    err = pthread_create(&t2, NULL, producer, bb); assert(err == 0);
+
+    err = pthread_join(t1, NULL); assert(err == 0);
+    err = pthread_join(t2, NULL); assert(err == 0);
+}
+```
+]]
+
+---
+# Bounded Buffer Implementation - Producer
+
+.box-90[.fs-90[
+```
+struct BoundedBuffer { ... };
+typedef struct BoundedBuffer BoundedBuffer;
+
+BoundedBuffer * createBoundedBuffer(int size) { ... }
+           void destroyBoundedBuffer(BoundedBuffer * bb) { ... }
+           void addItem(BoundedBuffer * bb, int item) { ... }
+            int removeItem(BoundedBuffer * bb) { ... }
+
+void * producer(void * arg) {
+  BoundedBuffer * bb = (BoundedBuffer*)arg;
+
+  for (int i = 0; i < 10; i++) {
+    int item = randInt();
+    printf("produced item %d\n", item);
+    addItem(bb, item);
+    usleep(randInt());
+  }
+  return NULL;
+}
+void * consumer(void * arg) { ... }
+
+int main() { ... }
+```
+]]
+
+
+---
+# Bounded Buffer Implementation - Consumer
+
+.box-90[.fs-90[
+```
+struct BoundedBuffer { ... };
+typedef struct BoundedBuffer BoundedBuffer;
+
+BoundedBuffer * createBoundedBuffer(int size) { ... }
+           void destroyBoundedBuffer(BoundedBuffer * bb) { ... }
+           void addItem(BoundedBuffer * bb, int item) { ... }
+            int removeItem(BoundedBuffer * bb) { ... }
+
+void * producer(void * arg) { ... }
+void * consumer(void * arg) {
+  BoundedBuffer * bb = (BoundedBuffer*)arg;
+
+  for (int i = 0; i < 10; i++) {
+    int item = removeItem(bb);
+    printf("    consumed item %d\n", item);
+    usleep(randInt());
+  }
+  return NULL;
+}
+
+int main() { ... }
+```
+]]
+
+---
+# Bounded Buffer Implementation - Add Item
+
+.box-90[.fs-90[
+```
+struct BoundedBuffer { ... };
+typedef struct BoundedBuffer BoundedBuffer;
+
+BoundedBuffer * createBoundedBuffer(int size) { ... }
+           void destroyBoundedBuffer(BoundedBuffer * bb) { ... }
+
+void addItem(BoundedBuffer * bb, int item) {
+  if (!bb) return;
+  pthread_mutex_lock(&bb->m);
+  while (bb->start == bb->end) { // buffer is full
+    printf("== Buffer is full ==\n");
+    pthread_cond_wait(&bb->add, &bb->m);
+  }
+  // buffer is no longer full
+  bb->buffer[bb->start] = item;
+  bb->start = (bb->start + 1) % bb->size; // move start one forward
+
+  pthread_mutex_unlock(&bb->m);
+  pthread_cond_signal(&bb->remove);
+}
+            int removeItem(BoundedBuffer * bb) { ... }
+void * producer(void * arg) { ... }
+void * consumer(void * arg) { ... }
+
+int main() { ... }
+```
+]]
+
+---
+# Bounded Buffer Implementation - Remove Item
+
+.box-90[.fs-90[
+```
+struct BoundedBuffer { ... };
+typedef struct BoundedBuffer BoundedBuffer;
+
+BoundedBuffer * createBoundedBuffer(int size) { ... }
+           void destroyBoundedBuffer(BoundedBuffer * bb) { ... }
+           void addItem(BoundedBuffer * bb, int item) { ... }
+
+int removeItem(BoundedBuffer * bb) {
+  if (!bb) assert(0);
+  pthread_mutex_lock(&bb->m);
+  while ( ((bb->end + 1) % bb->size) == bb->start ) { // buffer is empty
+    printf("== Buffer is empty ==\n");
+    pthread_cond_wait(&bb->remove, &bb->m);
+  }
+  // buffer is no longer empty
+  bb->end = (bb->end + 1) % bb->size; // move end one forward
+  int item = bb->buffer[bb->end];
+  pthread_mutex_unlock(&bb->m);
+  pthread_cond_signal(&bb->add);
+  return item;
+}
+
+void * producer(void * arg) { ... }
+void * consumer(void * arg) { ... }
+
+int main() { ... }
+```
+]]
+
+---
+# Bounded Buffer Implementation Summary
+
+- The buffer is implemented as a [ring buffer](https://en.wikipedia.org/wiki/Circular_buffer)
+
+- Two condition variables (`add` and `remove`) signal the two different conditions (buffer is full or empty)
+
+- Before inserting or removing an element the size of the buffer is checked and the threads wait if there is not space or data in the buffer
+
+- After inserting or removing an element the thread signals that data or space ios now available
+
+- The `producer` and `consumer` functions to not need to use locking themselves they are provided with an API that is safe to use concurrently
+
+---
+# Semaphore
+
+- Another classical synchronization primitive is a *semaphore*
+
+- A (counting) semaphore holds an integer counter together with two operations `wait` and `signal`
+
+- `wait` decrements the counter and blocks if it is less than zero
+
+- `signal` increments the counter and wakes waiting threads
+
+- We can count how many items of a resource are used and block access if no resources are available
+
+- Alternative to the safe bounded buffer implemented as a monitor as shown before,<br/> we can use a semaphore to ensure a correct usage of an unsafe bounded buffer implementation
+
+<br/>
+
+- A *binary semaphore* (with a count of 1) is similar to a mutex: allowing a single thread into a critical section
+
+- Key difference is that a mutex can only be reset (unlocked) from within the thread that locked it.<br/>
+  This does not have to be the case for a semaphore!
+
+---
+# Bounded Buffer Semaphore Implementation
+
+.box-90[.fs-90[
+```
+ struct BoundedBuffer {
+   int start; int end; int size; int* buffer;
+ };
+ typedef struct BoundedBuffer BoundedBuffer;
+
+ `sem_t fillCount;`  // data in the buffer
+ `sem_t emptyCount;` // free space in the buffer
+
+ BoundedBuffer * createBoundedBuffer(int size) { ... }
+            void destroyBoundedBuffer(BoundedBuffer * bb) { ... }
+            void addItem(BoundedBuffer * bb, int item) { ... }
+             int removeItem(BoundedBuffer * bb) { ... }
+
+ void * producer(void * arg) { ... }
+ void * consumer(void * arg) { ... }
+
+ int main() {
+     pthread_t t1; pthread_t t2; int err;
+     BoundedBuffer * bb = createBoundedBuffer(4);
+     `fillCount  = sem_create(0, 4);` // no data in the buffer yet
+     `emptyCount = sem_create(4, 4);` // all spaces in the buffer are free
+ 
+     err = pthread_create(&t1, NULL, consumer, bb); assert(err == 0);
+     err = pthread_create(&t2, NULL, producer, bb); assert(err == 0);
+     err = pthread_join(t1, NULL); assert(err == 0);
+     err = pthread_join(t2, NULL); assert(err == 0); }
+```
+]]
+
+---
+# Bounded Buffer Semaphore - Producer
+
+.box-90[.fs-90[
+```
+struct BoundedBuffer { ... };
+typedef struct BoundedBuffer BoundedBuffer;
+
+sem_t fillCount; sem_t emptyCount;
+
+BoundedBuffer * createBoundedBuffer(int size) { ... }
+           void destroyBoundedBuffer(BoundedBuffer * bb) { ... }
+           void addItem(BoundedBuffer * bb, int item) { ... }
+            int removeItem(BoundedBuffer * bb) { ... }
+
+void * producer(void * arg) {
+  BoundedBuffer * bb = (BoundedBuffer*)arg;
+
+  for (int i = 0; i < 10; i++) {
+    `sem_wait(emptyCount);`
+    int item = randInt();
+    printf("produced item %d\n", item);
+    addItem(bb, item);
+    `sem_signal(fillCount);`
+    usleep(randInt());
+  }
+  return NULL;
+}
+void * consumer(void * arg) { ... }
+
+int main() { ... }
+```
+]]
+
+---
+# Bounded Buffer Semaphore - Consumer
+
+.box-90[.fs-90[
+```
+struct BoundedBuffer { ... };
+typedef struct BoundedBuffer BoundedBuffer;
+
+sem_t fillCount; sem_t emptyCount;
+
+BoundedBuffer * createBoundedBuffer(int size) { ... }
+           void destroyBoundedBuffer(BoundedBuffer * bb) { ... }
+           void addItem(BoundedBuffer * bb, int item) { ... }
+            int removeItem(BoundedBuffer * bb) { ... }
+
+void * producer(void * arg) { ... }
+void * consumer(void * arg) {
+  BoundedBuffer * bb = (BoundedBuffer*)arg;
+
+  for (int i = 0; i < 10; i++) {
+    `sem_wait(fillCount);`
+    int item = removeItem(bb);
+    printf("    consumed item %d\n", item);
+    `sem_signal(emptyCount);`
+    usleep(randInt());
+  }
+  return NULL;
+}
+
+int main() { ... }
+```
+]]
+
+---
+# Semaphore Implementation
+
+- We can implement a semaphore using a combination of a mutex and condition variable:
+
+.box-80[.fs-80[
+```
+typedef struct sem {
+    pthread_mutex_t mut;  // mutex to protect value
+    pthread_cond_t cv;    // condition variable to signal change to value
+    unsigned int value;   // the current value of the counter
+    unsigned int maxval;  // the maximum value of the counter
+} Semaphore;
+```
+]]
+
+- `wait` decrements the counter and blocks if it goes below zero:
+
+.box-80[.fs-80[
+```
+void sem_wait (Semaphore* s) {
+    pthread_mutex_lock(&(p->mut));
+    while (p->value <= 0) { pthread_cond_wait(&(p->cv), &(p->mut)); }
+    p->value--;
+    pthread_mutex_unlock(&(p->mut)); }
+```
+]]
+
+- `signal` increments the counter and signals waiting threads:
+
+.box-80[.fs-80[
+```
+void sem_signal(Semaphore* s) {
+    pthread_mutex_lock(&(p->mut));
+    p->value++;
+    pthread_cond_signal(&(p->cv));
+    pthread_mutex_unlock(&(p->mut)); }
+```
+]]
+ 
+---
+# Next week
+
+- Multi threading in C++
+
+- Additional useful C++ features such as `lambda`s
+
+- Higher-level synchronisation primitives `future`s and `promise`s
+
+- Thread management: Thread pools, Task system
+
+- Larger examples of concurrent programs
+
+
+---
+name: closing
+background-image: url(../template/images/Closing16x9.jpg)
+class: title-slide, text-white
+count: false
+
+# Systems Programming
+## Lecture 6  .smaller[| 4.smaller[th] of November 2018]
+
+### Michel Steuwer .smaller[| [http://michel.steuwer.info](http://michel.steuwer.info/) | [michel.steuwer@glasgow.ac.uk](mailto:michel.steuwer@glasgow.ac.uk)]
+
+    </textarea>
+    <script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/MathJax.js?config=TeX-AMS_HTML&delayStartupUntil=configured" type="text/javascript"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0-alpha2/katex.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0-alpha2/contrib/auto-render.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0-alpha2/katex.min.css">
+
+    <script>
+    // macros
+    remark.macros['img'] = function (style) {
+        return '<img src="' + this + '" style="' + style + '" />';
+    };
+
+    remark.macros['team-member'] = function (name, style) {
+        return '<div style="position: absolute; ' + style + '"><img src="' + this + '" style="border-radius: 50%;" width="100%" />' + name + '</div>';
+    }
+    </script>
+
+    <script>
+      var renderMath = function() {
+        renderMathInElement(document.body, {delimiters: [
+            {left: "$$", right: "$$", display: true},
+            {left: "$", right: "$", display: false},
+            {left: "\\[", right: "\\]", display: true},
+            {left: "\\(", right: "\\)", display: false},
+        ]});
+      }
+
+      var slideshow = remark.create({
+          ratio: '16:9',
+          highlightLanguage: 'c',
+          highlightStyle: 'solarized-light', // light: 'idea' 'solarized-light', dark: 'monokai'
+          highlightLines: true,
+          highlightSpans: true
+          }); //, renderMath);
+
+      // Setup MathJax
+      MathJax.Hub.Config({ tex2jax: { skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'] } });
+      MathJax.Hub.Configured();
+    </script>
+  </body>
+</html>
