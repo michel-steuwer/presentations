@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Systems Programming</title>
+    <meta charset="utf-8">
+    <style>
+      @import url(../template/lift.css);
+      @import url(../template/glasgow.css);
+      @import url(../template/print.css);
+    </style>
+  </head>
+  <body>
+    <textarea id="source">
+
+name: title
+background-image: url(../template/images/Title16x9.jpg)
+class: title-slide
+count: false
+
+# Systems Programming
+## Lecture 7  .smaller[| 12.smaller[th] of November 2018]
+
+### Michel Steuwer .smaller[| [http://michel.steuwer.info](http://michel.steuwer.info/) | [michel.steuwer@glasgow.ac.uk](mailto:michel.steuwer@glasgow.ac.uk)]
+
+---
+# Recap of last week
+
+- We learned that **concurrency** is a programming paradigm to deal with lots of things at once 
+
+- This is distinct from **parallelism** which is about making a program run faster
+
+- **Threads** execute concurrently inside of the same **process** and share the same **address space**
+
+- Communication between threads happens by **shared memory** and requires carefully used synchronisation mechanisms to ensure that the communication happens safely
+
+- We learned how to create and wait for thread using the `pthread`s implementation in `C`
+
+- **Race conditions** can be avoided using the concept of *mutual exclusion* which we ensure with a `mutex`
+
+- **Condition variables** are a synchronisation mechanism to avoid *busy waiting* for a condition to become true
+
+- We can design data structures like a **bounded buffer** that internally use synchronisation mechanisms to ensure a safe usage; We call such objects that allow *thread-safe* access **Monitor**s
+
+---
+# This week: Concurrency in `C++`
+
+- `C++` provides a thread implementation as part of the standard library (since `C++` 2011)
+
+- It provides the same low-level synchronisation mechanisms available in `pthread`s
+
+- Additionally, higher level mechanisms are available as well
+
+- Today, we are going to learn some `C++` features that are particular useful for programming with threads
+
+
+---
+# Hello World from a `C++` thread
+
+```
+#include <stdio.h>
+#include <thread>
+
+int main() {
+    auto t = std::thread([](){
+      printf("Hello World from a cpp thread!\n");
+    });
+
+    t.join();
+}
+```
+
+- We need to .boxed[`#include <thread>`] and use the .boxed[`-std=c++17`] flag to specify the C++ standard
+
+- There are three major "modern" C++ standards: `c++11`, `c++14`, and `c++17`
+
+- Pick the latest supported by your compiler!
+
+- In the example we use two features of `C++` that we haven't seen so far: .boxed[`auto`] and *lambdas*
+
+
+---
+# `auto`: local type inference
+
+- In `C++` it is possible (and encouraged) to use the .boxed[`auto`] keyword instead of the name of the type when declaring variables:
+
+.box-70[
+```
+auto i = 42; // means the same as: int i = 42;
+```
+]
+
+- The compiler will *infer* (i.e. figure out) the type of the variable from the initialisation expression
+
+- It is important to understand that the variable still has a data type and the compiler knows it,<br/>
+  we just do not write it down explicitly
+
+- This feature becomes in particular handy for long type names, e.g.:
+
+.box-80[.fs-90[
+```
+auto v = std::vector<int>{1, 2, 3, 4, 5, 6, 7, 8, 9};
+// using explicit type name:
+for (std::vector<int>::iterator iter = v.begin(); iter != v.end(); iter++) { /*...*/ }
+// using auto instead:
+for (auto iter = v.begin(); iter != v.end(); iter++) { /*...*/ }
+```
+]]
+
+---
+# Lambda expressions
+
+- Earlier in the course we learned the concept of a *function pointer* to pass a function as argument
+
+- We have seen this used last week to create threads with `pthread`:
+
+.box-80[.fs-90[
+```
+void * PrintHelloWorld(void* arg) { printf("Hello World\n"); }
+int main() {
+  // ...
+  int error = pthread_create(&thread, NULL, PrintHelloWorld, NULL);
+  // ...                                    ^ this is passed as a function pointer
+}
+```
+]]
+
+- By writing a *lambda expression* we can write a function *inline*:
+
+.box-80[.fs-90[
+```
+int main() { auto t = std::thread( `[](){ printf("Hello World\n"); }` ); t.join(); }
+```
+]]
+
+- Other names for *lambdas* are: *function literal* or *anonymous functions*
+
+- Lambda expressions origin from the *lambda calculus* invented by Alonzo Church in the 1930s
+
+- They are now available in almost all programming languages
+
+
+---
+# Lambda expressions `C++` syntax
+
+- Lambda expressions in `C++` are written as:
+
+.box-80[.fs-90[
+```
+[ /*captures*/ ] ( /*params*/ ) { /*body*/ }
+```
+]]
+
+- The *captures* lists variables from the surrounding scope that are passed to the lambda *when it is created*
+
+- The *params* list the parameters that are passed to the lambda *when it is called*
+
+- The *body* is the function body executing when the lambda is called
+
+- As for function parameters variables are captured *by-value* i.e. they are copied
+
+- We can *share* access to a variable by capturing a pointer to it using this notation:
+
+.box-80[.fs-90[
+```
+int main() {
+  auto l = list{}; l.append_to_list('a'); l.append_to_list('b'); 
+  auto t1 = std::thread(`[l_ptr = &l]`(){ l_ptr->remove_from_list(1); });
+  t1.join();
+}
+```
+]]
+
+---
+# Threads and lambdas
+
+- *Lambda expressions* are particular useful for writing applications with threads
+
+- We start a threads in `C++` by constructing a .boxed[`std::thread`] object with a function pointer or lambda
+
+- In `pthreads` arguments are passed as .boxed[`void *`] to threads.<br/>
+  This is problematic, as a `void` pointer looses the meaning of the bits it is pointing to!
+
+.box-80[.fs-90[
+```
+void* remove_second_element_from_list(void* arg) {
+  `struct list* list = (struct list*)arg;` // restore the meaning of the pointer
+  // ...
+}
+int main() { struct list* list = create_list(create_node('a'));     // ...
+  pthread_create(&t1, NULL, remove_second_element_from_list, `list`); // ...
+}
+```
+]]
+
+- In `C++` we can pass arguments to the lambda expression executed by a thread by capturing the values.</br>
+  This is a type safe way to pass the data around, ensuring that the meaning of bits is preserved.
+
+.box-80[.fs-90[
+```
+int main() {
+  auto l = list{}; l.append_to_list('a'); // ...
+  auto t1 = std::thread(`[l_ptr = &l]`(){ l_ptr->remove_from_list(1); }); // ...
+}
+```
+]]
+
+---
+# Mutual exclusion in `C++`
+
+- We learned about *mutual exclusion*: ensuring that no two threads simultaneously enter their critical sections
+
+- To resolve this we use a .boxed[`mutex`] and call .boxed[`lock`] / .boxed[`unlock`] before we enter and when we leave a critical section
+
+- It is very easy to forget calling .boxed[`unlock`] when code has complicated control flow or exceptions
+
+- To avoid this, we think in `C++` about locking mutex as *owning of a resource* and apply the RAII technique:
+
+  - we create a local variable on the stack that locks the mutex
+
+  - at the end of the lifetime the variable releases the lock *automatically*
+
+.box-80[.fs-90[
+```
+#include <mutex>
+std::mutex m; // mutex variable; shared across threads
+
+void foo() {
+  std::unique_lock<std::mutex> lock(m); // acquire the mutex by calling m.lock();
+  // ... do some work
+} // releases the mutex by calling m.unlock();
+```
+]]
+
+---
+# Thread Safe Linked List in `C++`
+
+- We encapsulate a .boxed[`std::list<int>`] and add a thread-safe interface protected by a .boxed[`std::mutex`]
+
+.box-80[.fs-80[
+```
+#include <list> #include <thread> #include <optional> `#include <mutex>`
+struct list {
+private:
+  std::list<int> list; `std::mutex mutex;` // mutex to protect critical section
+public:
+  void append_to_list(int value) {
+    `std::unique_lock<std::mutex> lock(mutex);` // lock mutex: enter critical section
+    list.push_back(value);
+  } // mutex will be automatically unlocked here
+
+  std::optional<int> remove_from_list(int position) {
+    `std::unique_lock<std::mutex> lock(mutex);` // lock mutex: enter critical section
+    auto iter = list.begin();
+    while (position > 0 && iter != list.end()) { iter++; position--;  }
+    if (position != 0 || iter == list.end()) { return {}; /* nothing to return */ }
+    int value = *iter;
+    list.erase(iter);
+    return value;
+  } // mutex will be automatically unlocked here
+};
+
+int main() {
+ auto l = list{}; l.append_to_list('a'); l.append_to_list('b'); l.append_to_list('c');
+ auto t1 = std::thread([l_ptr = &l](){ l_ptr->remove_from_list(1); });
+ auto t2 = std::thread([l_ptr = &l](){ l_ptr->remove_from_list(1); });
+ t1.join(); t2.join();
+}
+```
+]]
+
+
+
+---
+# Condition variables in `C++`
+
+- Condition variables are a synchronisation mechanism to wait for conditions without busy waiting
+
+- For `pthreads` we learned to always use a `while` loop when using a condition variable:
+
+.box-80[.fs-90[
+```
+pthread_mutex_lock(&m);
+while (!cond) {
+  pthread_cond_wait(&cv, &m); }
+```
+]]
+
+- In `C++` we directly provide the test for the condition we are waiting for to the `wait` call:
+
+.box-80[.fs-90[
+```
+cv.wait(m, [](){ return cond; });
+```
+]]
+
+- The show code will ensure to check the condition again after the thread is woken up, so that we have the guarantee that .boxed[`cond`] must be true after the line is executed.
+
+- Be aware about the opposite checks of `cond` here:<br/>
+  In `C pthread` we check if the condition is *not* true and then wait</br>
+  In `C++` we write the check the other way around to express that we wait for the condition to become true
+
+---
+# Bounded Buffer in `C++`
+
+- We saw a bounded buffer implementation with `pthread`s last week
+
+- Much simpler implementation possible in `C++`: we only have to encapsulate a .fs-90[.boxed[`std::vector`]], that automatically takes care of the memory management, with a thread-safe interface
+
+.box-90[.fs-90[
+```
+struct BoundedBuffer {
+private:
+  int start; int end; int size;
+  std::vector<int> buffer; // use std::vector<int> for automatic memory management
+  std::mutex m;
+  std::condition_variable add_cv;
+  std::condition_variable remove_cv;
+public:
+  BoundedBuffer(int max_size) { ... } // constructor to create bounded buffer
+  void addItem(int item)      { ... } // thread-safe interface to add items to the buffer
+  int  removeItem()           { ... } // thread-safe interface to remove items from the buffer
+};
+
+int main() {
+    auto bb = BoundedBuffer{4};                     // create a bounded buffer object
+    auto consumer = std::thread([bb = &bb]{ ... }); // start consumer thread
+    auto producer = std::thread([bb = &bb]{ ... }); // start producer thread
+    consumer.join(); producer.join();               // wait for both threads to finish
+}
+```
+]]
+
+---
+# Bounded Buffer in `C++` - Producer
+
+.box-90[.fs-90[
+```
+struct BoundedBuffer {
+  ...
+};
+
+int main() {
+    auto bb = BoundedBuffer{4};                     // create a bounded buffer object
+
+    auto consumer = std::thread([bb = &bb]{ ... }); // start consumer thread
+
+    // start producer thread and capture pointer to the shared bounded buffer
+    auto producer = std::thread([bb = &bb]{
+      for (int i = 0; i < 10; i++) {
+        int item = randInt();
+        printf("produced item %d\n", item);
+        bb->addItem(item);
+        std::this_thread::sleep_for(std::chrono::milliseconds(randInt()));
+      }
+    });
+
+    consumer.join(); producer.join();               // wait for both threads to finish
+}
+```
+]]
+
+- The consumer implementation is similar
+
+---
+# Bounded Buffer in `C++` - Constructor
+
+.box-90[.fs-90[
+```
+struct BoundedBuffer {
+private:
+  int start; int end; int size;
+  std::vector<int> buffer; // use vector for automatic memory management
+  std::mutex m;
+  std::condition_variable add_cv;
+  std::condition_variable remove_cv;
+public:
+  BoundedBuffer(int max_size) { // constructor to create bounded buffer
+    start   = 0;
+    end     = max_size-1;
+    size    = max_size;
+    // no manual malloc (and free) required when using std::vector
+    buffer  = std::vector<int>(size);
+  }
+  void addItem(int item)      { ... } // thread-safe interface to add items to the buffer
+  int  removeItem()           { ... } // thread-safe interface to remove items from the buffer
+};
+
+int main() { ... }
+```
+]]
+
+---
+# Bounded Buffer in `C++` - Add Item
+
+.box-90[.fs-90[
+```
+struct BoundedBuffer {
+private:
+  ...
+public:
+  BoundedBuffer(int max_size) { ... }
+
+  void addItem(int item)      { // thread-safe interface to add items to the buffer
+    std::unique_lock<std::mutex> lock(m); // acquire lock: enter critical section
+
+    add_cv.wait(lock,                     // wait with the condition variable 'add_cv'
+      [this]{ return start != end; });    // for the cond 'start != end' to become true
+
+    buffer[start] = item;
+    start = (start + 1) % size;
+
+    remove_cv.notify_one(); // notify possibly waiting thread that an item is in the buffer
+
+  } // lifetime of 'lock' reached; release lock: exit critical section
+
+  int  removeItem()           { ... } // thread-safe interface to remove items from the buffer
+};
+
+int main() { ... }
+```
+]]
+
+---
+# Bounded Buffer in `C++` - Remove Item
+
+.box-90[.fs-90[
+```
+struct BoundedBuffer {
+private:
+  ...
+public:
+  BoundedBuffer(int max_size) { ... }
+
+  void addItem(int item)      { ... } // thread-safe interface to add items to the buffer
+
+  int  removeItem()           { // thread-safe interface to remove items from the buffer
+    std::unique_lock<std::mutex> lock(m); // acquire lock: enter critical section
+
+    remove_cv.wait(lock,                  // wait with the condition variable 'remove_cv'
+      [this]{ return ((end + 1) % size) != start; }); // for this condition to become true
+
+    end = (end + 1) % size;
+    int item = buffer[end];
+    add_cv.notify_one(); // notify possibly waiting thread that there is free space in the buffer
+    return item;
+  } // lifetime of 'lock' reached; release lock: exit critical section
+};
+
+int main() { ... }
+```
+]]
+
+---
+# Launching tasks with `std::async`
+
+- So far we have created threads explicitly and used low-level synchronisation mechanisms
+
+- Higher-level abstractions are easier to use and harder to get wrong
+
+- Instead of threads we can think about *tasks* that should be handled concurrently
+
+- Instead of synchronisation we can think about how these tasks *communicate*
+
+- `C++` provides a high-level interface to launch an asynchronous task: .boxed[`std::async`]:
+
+.box-80[.fs-90[
+```
+int fib(int n) { ... } // computes the nth fibonacci number
+
+int main() {
+  // launch task to computer fibonacci number of 6
+  `auto f6 = std::async([] { return fib(6); });`
+  // while we are waiting for the task to finish we compute the fibonacci number of 7
+  auto f7 = fib(7);
+  printf("fib(7) = %d\n", f7);
+  // now we access the result of the task and wait if it is not yet finished computing
+  printf("fib(6) = %d (computed asynchronously)\n", `f6.get()`);
+}
+```
+]]
+
+---
+# `std::future`
+
+- A task launched with .boxed[`std::async`] returns a .boxed[`std::future`]:
+
+.box-80[.fs-90[
+```
+int main() {
+  `std::future<int> f6` = std::async([] { return fib(6); });
+  // ...
+  printf("fib(6) = %d (computed asynchronously)\n", `f6.get()`);
+}
+```
+]]
+
+- A *future* is a handle representing a value that is not yet computed
+
+- We can pass this handle around or store it somewhere, for example:
+
+.box-80[.fs-90[
+```
+int main() {
+  auto fs = `std::vector<std::future<int>>`();
+  // launch 10 asynchronous tasks to computer fibonacci numbers
+  for (int i = 0; i < 10; i++) { fs.push_back(std::async([] { return fib(i+1); })); }
+  // ... do some other work; then print the computed numbers
+  for (int i = 0; i < 10; i++) { printf("fib(%d) = %d\n", i+1, fs[i].get()); }
+}
+```
+]]
+
+- Once we require the value we call .boxed[`future.get()`]; the call will wait until the value has been computed
+
+---
+# Example of `async` and `future`: parallel sum
+
+- We want to quickly compute the sum of all values in an array using multiple threads .fs-70[(this is an example of parallelism)]
+
+- We use divide & conquer by recursively building a *reduction tree* where subtrees are processed concurrently:
+
+.box-90[.fs-90[
+```
+int parallelSum(std::vector<int>::iterator begin, std::vector<int>::iterator end, int acc) {
+  auto len = end - begin;
+  // compute sequentially for small arrays
+  if (len < 1000) { return std::accumulate(begin, end, 0); }
+  auto mid = begin + len/2;
+  // launch asynchronous task for the left half of the array
+  auto left_side = std::async([=] { return parallelSum(begin, mid, acc); });
+  // compute right half of array recursively
+  int right_side = parallelSum(mid, end, acc);
+  // block to wait for left side to finish
+  return left_side.get() + right_side;
+}
+
+int main() {
+  std::vector<int> vec = createLargeVector();
+  auto sum = parallelSum(vec.begin(), vec.end(), 0);
+  printf("sum: %d\n", sum);
+}
+```
+]]
+
+---
+# Performance results for parallel sum
+
+- We run the code using `async`, measure its runtime and compare it to a sequential version:
+
+.box-90[.fs-90[
+```
+sum result: 5243777 (time: 5.491102 ms) vs. par_sum result: 5243777 (time: 135.894128 ms)
+```
+]]
+
+- The parallel version is about 30 times slower than the sequential version! Why?
+
+--
+
+- We create too many threads! The thread management overhead outweighs the advantages of parallelism.
+
+- We can fix this, by ensuring that parameters are only spawned for the first few recursive calls:
+
+.fs-90[
+```
+int parallelSum(std::vector<int>::iterator begin, std::vector<int>::iterator end, int acc, `int depth = 0`) {
+  auto len = end - begin;
+  if (len < 1000 `|| depth > 3`) { return std::accumulate(begin, end, 0); }
+  auto mid = begin + len/2;
+  auto left_side = std::async([=] { return parallelSum(begin, mid, acc`, depth + 1`); });
+  int right_side = parallelSum(mid, end, acc`, depth + 1`);
+  return left_side.get() + right_side;
+}
+```
+]
+
+- Resulting in a much improved parallel runtime:
+
+.fs-90[
+```
+sum result: 5243777 (time: 4.979168 ms) vs. par_sum result: 5243777 (time: 2.492056 ms)
+```
+]
+
+---
+class: split-70
+# The other side of a future: `std::promise`
+.left-column[
+- A task created with `async` communicates its result via a future
+
+- We can see a *future* as the reading end of a communication channel
+
+- In `C++` the writing side of the channel is called a *promise*
+
+- We can obtain a `std::future` object via a `std::promise`:
+]
+
+.right-column[
+![:img ](images/future-promise.png)
+]
+
+<div style="clear: both"></div>
+
+.fs-90[
+```
+void sum(std::vector<int>::iterator begin, std::vector<int>::iterator end, std::promise<int> sum_promise) {
+  int sum = std::accumulate(begin, end, 0);
+  `sum_promise.set_value(sum);` // 4. write result
+}
+ 
+int main() {
+  auto numbers = std::vector<int>{ 1, 2, 3, 4, 5, 6 };
+  `std::promise<int> sum_promise;`                            // 1. create promise for an int
+  `std::future<int> sum_future = sum_promise.get_future();`   // 2. get future from promise
+  // 3. create thread that takes ownership of the promise (ownership transfer with std::move)
+  auto t = std::thread(sum, numbers.begin(), numbers.end(), `std::move(sum_promise)`);
+  printf("result = %d\n", `sum_future.get()`); // 4. wait and then read result
+  t.join();
+}
+```
+]
+
+---
+# Synchronisation with `std::promise<void>`
+
+- Usually we communicate data over a channel, like the results of a computation
+
+- Sometimes we only want to signal a state change between communicating partners.<br/>
+  The fact that we communicate at all is enough information exchanged.
+
+- We can achieve this with a `std::promise<void>`, a *promise* to produce *nothing*:
+
+.fs-90[
+```
+void do_work(std::promise<void> barrier) {
+  std::this_thread::sleep_for(std::chrono::seconds(1)); // do some important work (like sleeping)
+  `barrier.set_value();`                                        // 4. send signal to other thread
+}
+ 
+int main() {
+    `std::promise<void> barrier;`                               // 1. create promise
+    `std::future<void> barrier_future = barrier.get_future();`  // 2. get future from it
+    auto t = std::thread(do_work, `std::move(barrier)`);        // 3. launch thread
+    `barrier_future.wait();`                                    // 4. wait for signal
+    t.join();
+}
+```
+]
+
+
+---
+# Creating tasks manually with `packaged_task`
+
+- If we don't want to launch a task immediately, we can create one using `std::package_task`:
+
+.box-90[.fs-90[
+```
+int main() {
+  auto task = `std::packaged_task<int(int,int)>([](int a, int b) { return pow(a, b); })`;
+  std::future<int> result = `task.get_future()`;
+
+  // either launch task in the same thread via:
+  // task(2, 10);
+  // or start a new thread:
+  auto t = std::thread(`std::move(task)`, 2, 10);
+  t.join();
+
+  printf("task result: %d\n", `result.get()`);
+}
+```
+]]
+
+- `packaged_task` allows to store task, e.g. for managing them in queues
+
+- We will investigate next week how we build a *task system* to manage the execution of many concurrent tasks
+
+---
+# Next week
+
+- Thread management: Thread pool and Task system
+
+- Larger examples of concurrent programs
+
+---
+name: closing
+background-image: url(../template/images/Closing16x9.jpg)
+class: title-slide, text-white
+count: false
+
+# Systems Programming
+## Lecture 7  .smaller[| 12.smaller[th] of November 2018]
+
+### Michel Steuwer .smaller[| [http://michel.steuwer.info](http://michel.steuwer.info/) | [michel.steuwer@glasgow.ac.uk](mailto:michel.steuwer@glasgow.ac.uk)]
+
+    </textarea>
+    <script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/MathJax.js?config=TeX-AMS_HTML&delayStartupUntil=configured" type="text/javascript"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0-alpha2/katex.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0-alpha2/contrib/auto-render.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0-alpha2/katex.min.css">
+
+    <script>
+    // macros
+    remark.macros['img'] = function (style) {
+        return '<img src="' + this + '" style="' + style + '" />';
+    };
+
+    remark.macros['team-member'] = function (name, style) {
+        return '<div style="position: absolute; ' + style + '"><img src="' + this + '" style="border-radius: 50%;" width="100%" />' + name + '</div>';
+    }
+    </script>
+
+    <script>
+      var renderMath = function() {
+        renderMathInElement(document.body, {delimiters: [
+            {left: "$$", right: "$$", display: true},
+            {left: "$", right: "$", display: false},
+            {left: "\\[", right: "\\]", display: true},
+            {left: "\\(", right: "\\)", display: false},
+        ]});
+      }
+
+      var slideshow = remark.create({
+          ratio: '16:9',
+          highlightLanguage: 'c',
+          highlightStyle: 'solarized-light', // light: 'idea' 'solarized-light', dark: 'monokai'
+          highlightLines: true,
+          highlightSpans: true
+          }); //, renderMath);
+
+      // Setup MathJax
+      MathJax.Hub.Config({ tex2jax: { skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'] } });
+      MathJax.Hub.Configured();
+    </script>
+  </body>
+</html>
