@@ -8,9 +8,7 @@ int main() {
   // allocate memory based on input
   int* array = malloc(count * sizeof(int));
   for (int i = 0; i < count; i++) {
-    int number;
-    if (scanf("%d", &number) == EOF) { exit(-1); }
-    array[i] = number;
+    if (scanf("%d", array + i) == EOF) { exit(-1); }
   }
 
   float sum = 0.0f;

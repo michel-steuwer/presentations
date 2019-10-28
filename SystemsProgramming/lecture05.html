@@ -18,7 +18,7 @@ class: title-slide
 count: false
 
 # Systems Programming
-## Lecture 5  .smaller[| 22.smaller[th] of October 2018]
+## Lecture 5  .smaller[| 28.smaller[th] of October 2019]
 
 ### Michel Steuwer .smaller[| [http://michel.steuwer.info](http://michel.steuwer.info/) | [michel.steuwer@glasgow.ac.uk](mailto:michel.steuwer@glasgow.ac.uk)]
 
@@ -49,110 +49,6 @@ int main() {
  - `std::unique_ptr` for unique ownership of a single value
  - `std::share_ptr` for shared ownership of a single value
 
----
-# .fs-90[Directed Acyclic Graph (DAG) with Smart Pointers]
-
-.box-90[.fs-90[
-```C
-#include <memory>
-#include <vector>
-
-struct node {
-    const char * value;
-    // every node can have multiple outgoing edges
-    // a node "owns" the nodes it point to
-    // this is a shared ownership as a single node can have multiple nodes pointing to it
-    std::vector< std::shared_ptr<node> > edges_to;
-    // constructor
-    node(const char * v) { value = v; }
-    // add a new connection to the DAG
-    void add_edge_to(std::shared_ptr<node> n) { edges_to.push_back(n); }
-}; // we do not need a custom destructor as the shared_ptr manages its memory automatically
-
-// create a diamond-shaped DAG 
-std::shared_ptr<node> create_diamond() {
-  std::shared_ptr<node> a = std::make_shared<node>("a");
-  a->add_edge_to(std::make_shared<node>("b"));
-  a->add_edge_to(std::make_shared<node>("c"));
-  std::shared_ptr<node> d = std::make_shared<node>("d");
-  a->edges_to[0]->add_edge_to(d);
-  a->edges_to[1]->add_edge_to(d);
-  return a;
-}
-```
-]]
-
----
-# Ownership transfer
-
-- When modeling unique ownership we should use a `std::unique_ptr`
-
-- For example we can model a tree where the parent is uniquely responsible for its children like this:
-
-.box-70[.fs-80[
-```C
-struct node {
-    const char * value;
-    std::vector< std::unique_ptr<node> > children;
-
-    node(const char * v) { value = v; }
-};
-```
-]]
-
-- When we add a member function to add children we receive an error:
-
-.box-90[.fs-90[
-```C
-struct node { /* ... */ void add_child(std::unique_ptr<node> n) { children.push_back(n); } };
-```
-].fs-80[
-```
-memory:1805:31: error:
-call to implicitly-deleted copy constructor of 'std::__1::unique_ptr<node, std::__1::default_delete<node> >'
-```
-]]
-
-- What are we trying to achieve here?<br/>
-  The ownership should be unique, but if we make a copy of a unique pointer then clearly two variables<br/>
-  (the original and the copy) hold ownership. The compiler is preventing that this happens!<br/>
-  .center[ Instead we have to explicitly *transfer the ownership*! ]
-
-
----
-# Ownership transfer with .fs-80[`std::move`]
-
-- To transfer the ownership of a unique resource such as `std::unique_ptr` we use `std::move`:
-
-.box-90[.fs-90[
-```C
-void add_child(std::unique_ptr<node> n) { children.push_back(`std::move(n)`); }
-```
-]]
-
-- The ownership transfer signals that the old variable is no longer responsible to manage the resource:
-
-.box-90[.fs-90[
-```C
-void main() {
-  std::unique_ptr<node> a_ptr = std::make_unique<node>("a");
-    {
-      std::unique_ptr<node> b_ptr = std::make_unique<node>("b");
-      a_ptr->add_child(`std::move(b_ptr)`); // ownership is transferred here
-    } // lifetime of b_ptr ends => nothing happens (b_ptr doesn't own anything anymore)
-} // lifetime of a_ptr ends => memory allocated for a and b will be freed
-```
-]]
-
-- It is forbidden to access the value of a variable for which ownership has been transferred
-
-.box-90[.fs-90[
-```C
-    std::unique_ptr<node> b_ptr = std::make_unique<node>("b");
-    a_ptr->add_child(`std::move(b_ptr)`);
-    b_ptr->value; // BAD IDEA
-```
-]]
 
 ---
 class: split-45-50
@@ -501,7 +397,7 @@ class: title-slide, text-white
 count: false
 
 # Systems Programming
-## Lecture 5  .smaller[| 22.smaller[th] of October 2018]
+## Lecture 5  .smaller[| 28.smaller[th] of October 2019]
 
 ### Michel Steuwer .smaller[| [http://michel.steuwer.info](http://michel.steuwer.info/) | [michel.steuwer@glasgow.ac.uk](mailto:michel.steuwer@glasgow.ac.uk)]
 
